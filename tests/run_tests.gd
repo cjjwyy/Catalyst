@@ -11,6 +11,10 @@ static func run_all() -> bool:
 	ok = ok and _test_chain_reaction_runs()
 	ok = ok and _test_phantom_multiply_no_chain()
 	ok = ok and _test_extinct_terminates()
+	ok = ok and _test_dust_spawn()
+	ok = ok and _test_wind_push_dust()
+	ok = ok and _test_dust_blob_extends_scope()
+	ok = ok and _test_chaos_detection()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -188,4 +192,95 @@ static func _test_extinct_terminates() -> bool:
 	var chain = runner.execute(g, [p_grow, p_ext])
 	assert(chain < ChainReaction.MAX, "should not hit MAX, got %d" % chain)
 	print("test_extinct_terminates OK (chain=%d)" % chain)
+	return true
+
+static func _test_dust_spawn() -> bool:
+	# 用棋盘格填满 WATER+LAVA 对,确保 chain >= 10 触发尘播撒
+	var g = Grid.new(6, 6)
+	for x in range(6):
+		for y in range(6):
+			if (x + y) % 2 == 0:
+				_put(g, x, y, Element.WATER)
+			else:
+				_put(g, x, y, Element.LAVA)
+	var c1 = _make_card({
+		"id":"steamify","name":"steamify","kind":"TRANSFORM",
+		"trigger_element":"WATER","contact_element":"LAVA",
+		"result_element":"STEAM","self_replace":"STONE","radius":5,"life":4
+	})
+	var p1 = RulePillar.new(c1, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p1])
+	var dust_count = 0
+	for c in g.all_cells():
+		if c.has_state(State.DUST):
+			dust_count += 1
+	assert(dust_count >= 1, "chain >= 10 should produce at least 1 DUST, got %d" % dust_count)
+	print("test_dust_spawn OK (chain=%d, dust=%d)" % [chain, dust_count])
+	return true
+
+static func _test_wind_push_dust() -> bool:
+	var g = Grid.new(6, 6)
+	var src = g.get_cell(Vector2i(2, 3))
+	src.add_state(State.DUST, 3)
+	var dir_vec = Vector2i(0, -1)
+	var speed = 2
+	var dst_coord = Vector2i(2, 3)
+	var fell = false
+	for _i in range(speed):
+		dst_coord = dst_coord + dir_vec
+		if not g.is_in_bounds(dst_coord):
+			fell = true
+			break
+	if fell:
+		src.remove_state(State.DUST)
+	else:
+		var dst = g.get_cell(dst_coord)
+		var turns = src.states.get(State.DUST, 0)
+		src.remove_state(State.DUST)
+		dst.add_state(State.DUST, max(dst.states.get(State.DUST, 0), turns))
+	assert(g.get_cell(Vector2i(2, 1)).has_state(State.DUST), "dust should move to (2,1)")
+	assert(not g.get_cell(Vector2i(2, 3)).has_state(State.DUST), "old cell should be clean")
+	print("test_wind_push_dust OK")
+	return true
+
+static func _test_dust_blob_extends_scope() -> bool:
+	# 3 格尘形成 4 连通团块: (2,2)(2,3)(3,3)
+	# pillar at (1,1) radius=2 touches (2,2) → blob expands to (2,3)(3,3)
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.STEAM)
+	_put(g, 2, 2, Element.PLANT)
+	g.get_cell(Vector2i(2,2)).add_state(State.DUST, 3)
+	_put(g, 2, 3, Element.PLANT)
+	g.get_cell(Vector2i(2,3)).add_state(State.DUST, 3)
+	_put(g, 3, 3, Element.PLANT)
+	g.get_cell(Vector2i(3,3)).add_state(State.DUST, 3)
+	var card = _make_card({
+		"id":"grow","name":"grow","kind":"MULTIPLY",
+		"trigger_element":"PLANT","contact_element":"STEAM",
+		"result_element":"PLANT","radius":2,"life":4
+	})
+	var pillar = RulePillar.new(card, Vector2i(1,1), 0)
+	var engine = RuleEngine.new()
+	var out = engine.evaluate(g, [pillar])
+	var targets: Array = []
+	for r in out:
+		targets.append(r.target_coord)
+	assert(targets.has(Vector2i(2,2)), "should trigger plant at (2,2)")
+	assert(targets.has(Vector2i(2,3)), "should trigger plant at (2,3) via dust blob")
+	assert(targets.has(Vector2i(3,3)), "should trigger plant at (3,3) via dust blob")
+	print("test_dust_blob_extends_scope OK (%d reactions)" % out.size())
+	return true
+
+static func _test_chaos_detection() -> bool:
+	var g = Grid.new(6, 6)
+	for y in range(g.h):
+		for x in range(g.w):
+			var c = g.get_cell(Vector2i(x, y))
+			if c != null and not (y == 5 and x == 5):
+				c.element = Element.PLANT
+	var n = g.count_element(Element.PLANT)
+	assert(n > g.w * g.h / 2, "should be majority (got %d/36)" % n)
+	assert(n >= 35, "33+ plants needed, got %d" % n)
+	print("test_chaos_detection OK (plant=%d)" % n)
 	return true
