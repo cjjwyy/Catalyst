@@ -6,6 +6,7 @@ var states: Dictionary = {}  # state_enum -> 剩余回合数
 var pillar = null             # RulePillar 或 null
 var coord: Vector2i = Vector2i.ZERO
 var placed_at_turn: int = 0   # 用于 EXTINCTION "最旧" 判定
+var decay_timer: int = 0   # 草连续无邻树回合计数
 
 func has_state(s: int) -> bool:
 	return states.has(s)

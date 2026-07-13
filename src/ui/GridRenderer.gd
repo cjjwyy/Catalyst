@@ -12,6 +12,8 @@ var COLORS = {
 	Element.STEAM: Color(0.85, 0.85, 0.9),
 	Element.LAVA: Color(0.9, 0.25, 0.15),
 	Element.PLANT: Color(0.3, 0.75, 0.3),
+	Element.ORE: Color(0.85, 0.7, 0.2),
+	Element.GRASS: Color(0.4, 0.9, 0.4),
 }
 
 const LABELS = {
@@ -22,6 +24,8 @@ const LABELS = {
 	Element.STEAM: "汽",
 	Element.LAVA: "熔",
 	Element.PLANT: "植",
+	Element.ORE: "矿",
+	Element.GRASS: "草",
 }
 
 func _font() -> Font:
@@ -118,6 +122,8 @@ func _draw_legend() -> void:
 		[Element.STEAM, "汽"],
 		[Element.LAVA, "熔"],
 		[Element.PLANT, "植"],
+		[Element.ORE, "矿"],
+		[Element.GRASS, "草"],
 		[Element.NONE, "空"],
 	]
 	var i = 0
