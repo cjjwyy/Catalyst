@@ -2,6 +2,7 @@ extends Node2D
 
 const CELL_SIZE = 64
 const GRID_OFFSET = Vector2(160, 120)
+const DIR_CHARS = ["^", ">", "v", "<"]
 
 var COLORS = {
 	Element.NONE: Color(0.08, 0.08, 0.1),
@@ -55,6 +56,10 @@ func _draw() -> void:
 			if lbl != "":
 				draw_string(_font(), rect.position + Vector2(6, 26), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0,0,0,0.55))
 				draw_string(_font(), rect.position + Vector2(4, 24), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1,1,1))
+			if c.has_state(State.DUST):
+				var cx = rect.position.x + CELL_SIZE / 2.0
+				var cy = rect.position.y + CELL_SIZE / 2.0
+				draw_circle(Vector2(cx, cy), 6, Color(0.9, 0.8, 0.2, 0.7))
 			if c.pillar != null:
 				draw_rect(rect.grow(-4), Color(1, 0.92, 0.2), false, 3)
 			if c.has_state(State.STEAMED):
@@ -68,6 +73,9 @@ func _draw() -> void:
 	for p in (GameManager.pillars if GameManager != null else []):
 		var rect = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
 		draw_string(_font(), rect.position + Vector2(4, 14), str(p.life_remaining), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,0.4))
+	if GameManager != null:
+		var wind_text = DIR_CHARS[GameManager.wind_dir] + str(GameManager.wind_speed)
+		draw_string(_font(), GRID_OFFSET + Vector2(0, -20), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1, 0.8, 0.3))
 	_draw_legend()
 
 func _draw_legend() -> void:
@@ -96,6 +104,9 @@ func _draw_legend() -> void:
 	draw_rect(box, Color(0.1, 0.1, 0.12), true)
 	draw_rect(box.grow(-3), Color(1, 0.92, 0.2), false, 3)
 	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "规则柱 Pillar", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
+	i += 1
+	draw_circle(origin + Vector2(13, i * 38 + 13), 5, Color(0.9, 0.8, 0.2, 0.8))
+	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "催化剂尘 Dust", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
 
 func world_to_coord(wp: Vector2) -> Vector2i:
 	var local = wp - GRID_OFFSET
