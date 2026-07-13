@@ -1,0 +1,5 @@
+res://src/player/HandManager.gd
+res://src/rules/ChainReaction.gd
+res://tests/run_tests.gd
+res://src/rules/Reaction.gd
+res://src/rules/RuleCard.gd

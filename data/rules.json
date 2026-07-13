@@ -1,0 +1,37 @@
+[
+  {
+    "id": "steamify",
+    "name": "蒸汽化",
+    "kind": "TRANSFORM",
+    "trigger_element": "WATER",
+    "contact_element": "LAVA",
+    "result_element": "STEAM",
+    "self_replace": "STONE",
+    "radius": 2,
+    "life": 4,
+    "chain_reward": 1
+  },
+  {
+    "id": "grow",
+    "name": "加速生长",
+    "kind": "MULTIPLY",
+    "trigger_element": "PLANT",
+    "contact_element": "STEAM",
+    "result_element": "PLANT",
+    "radius": 2,
+    "life": 4,
+    "chain_reward": 1
+  },
+  {
+    "id": "extinct",
+    "name": "丛林灭绝",
+    "kind": "EXTINCTION",
+    "trigger_element": "PLANT",
+    "result_element": "NONE",
+    "radius": 2,
+    "life": 4,
+    "extinct_threshold": 5,
+    "also_clear": "STEAM",
+    "chain_reward": 1
+  }
+]
