@@ -18,7 +18,8 @@ func refresh() -> void:
 
 const CN = {
 	Element.NONE: "空", Element.WATER: "水", Element.STONE: "岩",
-	Element.EARTH: "土", Element.STEAM: "汽", Element.LAVA: "熔", Element.PLANT: "植"
+	Element.EARTH: "土", Element.STEAM: "汽", Element.LAVA: "熔", Element.PLANT: "植",
+	Element.ORE: "矿", Element.GRASS: "草"
 }
 
 func _label() -> String:

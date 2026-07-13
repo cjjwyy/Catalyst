@@ -106,10 +106,10 @@ func _draw() -> void:
 	for p in (GameManager.pillars if GameManager != null else []):
 		var pr = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
 		draw_string(_font(), pr.position + Vector2(4, 14), str(p.life_remaining), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,0.4))
-	# 风指示器(网格右上)
+	# 风指示器(网格左上角上方)
 	if GameManager != null:
-		var wind_text = DIR_CHARS[GameManager.wind_dir] + str(GameManager.wind_speed)
-		draw_string(_font(), GRID_OFFSET + Vector2(grid.w * CELL_SIZE + 8, -16), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 0.7, 0.2))
+		var wind_text = "风向风速: %s%d" % [DIR_CHARS[GameManager.wind_dir], GameManager.wind_speed]
+		draw_string(_font(), GRID_OFFSET + Vector2(0, -24), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.7, 0.2))
 	_draw_legend()
 
 func _draw_legend() -> void:
