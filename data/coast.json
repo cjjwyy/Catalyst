@@ -20,6 +20,9 @@
     {"coord": [4, 3], "element": "PLANT"},
     {"coord": [5, 3], "element": "PLANT"},
     {"coord": [4, 4], "element": "PLANT"},
-    {"coord": [5, 5], "element": "PLANT"}
+    {"coord": [5, 5], "element": "PLANT"},
+    {"coord": [0, 5], "element": "ORE"},
+    {"coord": [5, 0], "element": "ORE"},
+    {"coord": [0, 0], "element": "STONE"}
   ]
 }
