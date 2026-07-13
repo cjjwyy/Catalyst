@@ -22,30 +22,35 @@ const CN = {
 }
 
 func _label() -> String:
-	if card == null:
-		return "-"
+	if card == null: return "-"
+	var extra = ""
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			return "转化\n%s 接触 %s\n→ %s\n(r%d, %d回合)" % [
+			extra = "转化\n%s 接触 %s\n→ %s" % [
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?"),
-				card.radius, card.life]
+				CN.get(card.result_element,"?")]
+			if card.self_replace != Element.NONE:
+				extra += " + 清%s" % CN.get(card.self_replace,"?")
 		RuleCard.Kind.MULTIPLY:
-			return "增殖\n%s 相邻 %s\n→ 扩散 %s\n(r%d, %d回合)" % [
+			extra = "增殖\n%s 相邻 %s\n→ 扩散 %s" % [
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?"),
-				card.radius, card.life]
+				CN.get(card.result_element,"?")]
 		RuleCard.Kind.EXTINCTION:
-			var s = "灭绝\n%s ≥%d个\n→ 清空所有%s" % [
+			extra = "灭绝\n%s ≥%d个\n→ 清空所有%s" % [
 				CN.get(card.trigger_element,"?"),
 				card.extinct_threshold,
 				CN.get(card.trigger_element,"?")]
+			if card.also_count != Element.NONE:
+				extra += "+%s" % CN.get(card.also_count,"?")
 			if card.also_clear != Element.NONE:
-				s += "\n也清%s" % CN.get(card.also_clear,"?")
-			return s + "\n(r%d, %d回合)" % [card.radius, card.life]
-		_: return ""
+				extra += "\n也清%s" % CN.get(card.also_clear,"?")
+	var tail = "\n(半径%d格, %d回合" % [card.radius, card.life]
+	if card.chain_reward > 1:
+		tail += ", +%d连" % card.chain_reward
+	tail += ")"
+	return extra + tail
 
 func _tooltip() -> String:
 	if card == null: return ""

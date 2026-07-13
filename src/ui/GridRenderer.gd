@@ -1,7 +1,7 @@
 extends Node2D
 
 const CELL_SIZE = 64
-const GRID_OFFSET = Vector2(160, 120)
+const GRID_OFFSET = Vector2(160, 60)
 const DIR_CHARS = ["^", ">", "v", "<"]
 
 var COLORS = {
