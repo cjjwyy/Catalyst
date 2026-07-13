@@ -160,6 +160,9 @@ func push_dust() -> void:
 	var moves: Array = []  # [[from, to_or_null]]
 	for c in grid.all_cells():
 		if c.has_state(State.DUST):
+			# 新鲜尘(剩余>1回合)不会被风推动,给它一回合"落地"
+			if c.states.get(State.DUST, 0) > 1:
+				continue
 			var dst = c.coord
 			var fell_off = false
 			for _i in range(wind_speed):

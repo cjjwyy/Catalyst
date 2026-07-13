@@ -59,7 +59,9 @@ func _draw() -> void:
 			if c.has_state(State.DUST):
 				var cx = rect.position.x + CELL_SIZE / 2.0
 				var cy = rect.position.y + CELL_SIZE / 2.0
-				draw_circle(Vector2(cx, cy), 6, Color(0.9, 0.8, 0.2, 0.7))
+				# 心跳脉冲: sin 周期约 1.2 秒, 半径 4-8 之间呼吸
+				var r = 4.0 + 4.0 * sin(Time.get_ticks_msec() / 190.0)
+				draw_circle(Vector2(cx, cy), r, Color(0.9, 0.8, 0.2, 0.7))
 			if c.pillar != null:
 				draw_rect(rect.grow(-4), Color(1, 0.92, 0.2), false, 3)
 			if c.has_state(State.STEAMED):
