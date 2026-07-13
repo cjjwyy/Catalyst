@@ -112,13 +112,13 @@ func _draw_legend() -> void:
 	# 右侧网格旁画一行:色块 + 元素名,列出所有元素及"规则柱"
 	var origin = GRID_OFFSET + Vector2(grid.w * CELL_SIZE + 20, 0)
 	var items = [
-		[Element.WATER, "水体 Water"],
-		[Element.STONE, "岩石 Stone"],
-		[Element.EARTH, "土壤 Earth"],
-		[Element.STEAM, "蒸汽 Steam"],
-		[Element.LAVA, "熔岩 Lava"],
-		[Element.PLANT, "植物 Plant"],
-		[Element.NONE, "空 Empty"],
+		[Element.WATER, "水"],
+		[Element.STONE, "岩"],
+		[Element.EARTH, "土"],
+		[Element.STEAM, "汽"],
+		[Element.LAVA, "熔"],
+		[Element.PLANT, "植"],
+		[Element.NONE, "空"],
 	]
 	var i = 0
 	for item in items:
@@ -133,10 +133,10 @@ func _draw_legend() -> void:
 	var box = Rect2(origin + Vector2(0, i * 38), Vector2(26, 26))
 	draw_rect(box, Color(0.1, 0.1, 0.12), true)
 	draw_rect(box.grow(-3), Color(1, 0.92, 0.2), false, 3)
-	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "规则柱 Pillar", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
+	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "规则柱", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
 	i += 1
 	draw_circle(origin + Vector2(13, i * 38 + 13), 5, Color(0.9, 0.8, 0.2, 0.8))
-	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "催化剂尘 Dust", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
+	draw_string(_font(), origin + Vector2(34, i * 38 + 20), "催化剂尘", HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
 
 func world_to_coord(wp: Vector2) -> Vector2i:
 	var local = wp - GRID_OFFSET

@@ -16,6 +16,7 @@ const DIR_VECTORS = [
 ]
 const DIR_CHARS = ["^", ">", "v", "<"]
 const CHAOS_ELEMENTS = [Element.WATER, Element.STONE, Element.EARTH, Element.STEAM, Element.LAVA, Element.PLANT]
+const CHAOS_NAME = {Element.WATER:"水",Element.STONE:"岩",Element.EARTH:"土",Element.STEAM:"汽",Element.LAVA:"熔",Element.PLANT:"植"}
 
 var phase: int = Phase.LAYOUT
 var game_ended: bool = false
@@ -208,7 +209,7 @@ func chaos_check() -> void:
 						c.clear_states()
 				return
 			else:
-				game_over.emit(false, "混沌失控 - %s 覆盖超过 50%%" % Element.NAMES.get(elem, "??"))
+				game_over.emit(false, "混沌失控 — %s 超过 50%%" % CHAOS_NAME.get(elem,"??"))
 				return
 
 func decay_pillars() -> void:
