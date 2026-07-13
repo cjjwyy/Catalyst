@@ -3,3 +3,8 @@ res://src/rules/ChainReaction.gd
 res://tests/run_tests.gd
 res://src/rules/Reaction.gd
 res://src/rules/RuleCard.gd
+res://src/core/Grid.gd
+res://src/core/State.gd
+res://src/main/GameManager.gd
+res://src/rules/RuleEngine.gd
+res://src/ui/GridRenderer.gd

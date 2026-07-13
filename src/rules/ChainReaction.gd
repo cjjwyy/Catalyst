@@ -26,7 +26,7 @@ func execute(grid: Grid, pillars: Array) -> int:
 		var any_effect = false
 		for r in reactions:
 			r.apply(grid)
-			if r.affected.size() > 0 and chain > 0 and chain % 10 == 0:
+			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				var empty_dust_cells: Array = []
 				for c2 in grid.all_cells():
 					if not c2.has_state(State.DUST):
@@ -69,7 +69,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 		var any_effect = false
 		for r in reactions:
 			r.apply(grid)
-			if r.affected.size() > 0 and chain > 0 and chain % 10 == 0:
+			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				var empty_dust_cells: Array = []
 				for c2 in grid.all_cells():
 					if not c2.has_state(State.DUST):
