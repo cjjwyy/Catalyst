@@ -157,6 +157,7 @@ func end_turn() -> void:
 		c.tick_states()
 	push_dust()
 	chaos_check()
+	_world_rules()
 	_reroll_wind()
 	turn += 1
 	hand.draw(3)
@@ -211,6 +212,39 @@ func chaos_check() -> void:
 			else:
 				game_over.emit(false, "混沌失控 — %s 超过 50%%" % CHAOS_NAME.get(elem,"??"))
 				return
+
+func _world_rules() -> void:
+	for c in grid.all_cells():
+		if c.element == Element.STEAM and turn - c.placed_at_turn >= 2:
+			c.element = Element.NONE
+			c.placed_at_turn = turn
+	for c in grid.all_cells():
+		if c.element == Element.GRASS:
+			var has_friend = false
+			for n in grid.neighbors(c.coord):
+				if n.element in [Element.PLANT, Element.GRASS]:
+					has_friend = true
+					break
+			if not has_friend:
+				c.decay_timer += 1
+			else:
+				c.decay_timer = 0
+			if c.decay_timer >= 2:
+				c.element = Element.EARTH
+				c.decay_timer = 0
+				c.placed_at_turn = turn
+		elif c.element == Element.EARTH and turn - c.placed_at_turn >= 2:
+			c.element = Element.STONE
+			c.placed_at_turn = turn
+	var empty: Array = []
+	for c in grid.all_cells():
+		if c.element == Element.NONE:
+			empty.append(c)
+	var count = min(2, empty.size())
+	for _i in range(count):
+		var c = empty.pop_at(randi() % empty.size())
+		c.element = Element.WATER if randi() % 2 == 0 else Element.STONE
+		c.placed_at_turn = turn
 
 func decay_pillars() -> void:
 	for p in pillars:
