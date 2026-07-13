@@ -8,7 +8,18 @@ const RULES_PATH = "res://data/rules.json"
 const LEVEL_PATH = "res://data/coast.json"
 const TestsScript = preload("res://tests/run_tests.gd")
 
+const DIR_VECTORS = [
+	Vector2i(0, -1),   # 0=N
+	Vector2i(1, 0),    # 1=E
+	Vector2i(0, 1),    # 2=S
+	Vector2i(-1, 0),   # 3=W
+]
+const DIR_CHARS = ["^", ">", "v", "<"]
+const CHAOS_ELEMENTS = [Element.WATER, Element.STONE, Element.EARTH, Element.STEAM, Element.LAVA, Element.PLANT]
+
 var phase: int = Phase.LAYOUT
+var wind_dir: int = 0
+var wind_speed: int = 1
 var turn: int = 0
 var chain_total: int = 0
 var dead_turns: int = 0
@@ -38,6 +49,7 @@ func start_game() -> void:
 	hand.refill_to(5)
 	energy = EnergySystem.new(3)
 	phase = Phase.LAYOUT
+	_reroll_wind()
 	state_changed.emit()
 
 func _load_rules() -> Array:
@@ -114,9 +126,6 @@ func execute() -> void:
 	else:
 		dead_turns = 0
 	decay_pillars()
-	# 状态衰减
-	for c in grid.all_cells():
-		c.tick_states()
 	if chain_total >= TARGET:
 		game_over.emit(true, "胜利! 达成 %d 连锁" % chain_total)
 		phase = Phase.LAYOUT
@@ -130,11 +139,66 @@ func execute() -> void:
 	end_turn()
 
 func end_turn() -> void:
+	decay_pillars()
+	for c in grid.all_cells():
+		c.tick_states()
+	push_dust()
+	chaos_check()
+	_reroll_wind()
 	turn += 1
 	hand.draw(3)
 	energy.refill()
 	phase = Phase.LAYOUT
 	state_changed.emit()
+
+func _reroll_wind() -> void:
+	wind_dir = randi() % 4
+	wind_speed = randi() % 3 + 1
+
+func push_dust() -> void:
+	var dir_vec = DIR_VECTORS[wind_dir]
+	var moves: Array = []  # [[from, to_or_null]]
+	for c in grid.all_cells():
+		if c.has_state(State.DUST):
+			var dst = c.coord
+			var fell_off = false
+			for _i in range(wind_speed):
+				dst = dst + dir_vec
+				if not grid.is_in_bounds(dst):
+					fell_off = true
+					break
+			if fell_off:
+				moves.append([c.coord, null])
+			else:
+				moves.append([c.coord, dst])
+	for m in moves:
+		var src = grid.get_cell(m[0])
+		var turns_left = src.states.get(State.DUST, 0)
+		src.remove_state(State.DUST)
+		if m[1] != null:
+			var dst_cell = grid.get_cell(m[1])
+			var exist = dst_cell.states.get(State.DUST, 0)
+			dst_cell.add_state(State.DUST, max(exist, turns_left))
+
+func chaos_check() -> void:
+	var total = grid.w * grid.h
+	for elem in CHAOS_ELEMENTS:
+		var n = grid.count_element(elem)
+		if n > total / 2:
+			var ext_pillar = null
+			for p in pillars:
+				if p.card.kind == RuleCard.Kind.EXTINCTION and p.card.trigger_element == elem:
+					ext_pillar = p
+					break
+			if ext_pillar != null:
+				for c in grid.cells_in_radius(ext_pillar.coord, ext_pillar.card.radius):
+					if c.element == elem:
+						c.element = Element.NONE
+						c.clear_states()
+				return
+			else:
+				game_over.emit(false, "混沌失控 - %s 覆盖超过 50%%" % Element.NAMES.get(elem, "??"))
+				return
 
 func decay_pillars() -> void:
 	for p in pillars:
