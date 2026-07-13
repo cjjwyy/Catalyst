@@ -8,6 +8,8 @@ var energy_label: Label
 var status_label: Label
 var hand_container: HBoxContainer
 var execute_button: Button
+var help_button: Button
+var help_panel: ColorRect
 var card_views: Array = []
 
 func _ready() -> void:
@@ -19,10 +21,14 @@ func _ready() -> void:
 	status_label = $StatusLabel
 	hand_container = $HandContainer
 	execute_button = $ExecuteButton
+	help_button = $HelpButton
+	help_panel = $HelpPanel
 	execute_button.pressed.connect(_on_execute)
+	help_button.pressed.connect(func(): help_panel.visible = not help_panel.visible)
 	GameManager.state_changed.connect(_refresh)
 	GameManager.reaction_applied.connect(_on_reaction)
 	GameManager.game_over.connect(_on_game_over)
+	GameManager.flash_cell.connect(grid_renderer.on_flash)
 	grid_renderer.cell_clicked.connect(_on_cell_clicked)
 	grid_renderer.GameManager = GameManager
 	_refresh()
@@ -33,8 +39,7 @@ func _refresh() -> void:
 	grid_renderer.set_grid(GameManager.grid)
 	total_counter.text = "总和: %d / %d" % [GameManager.chain_total, GameManager.TARGET]
 	energy_label.text = GameManager.energy.text()
-	status_label.text = "回合 %d · 阶段 %s · 死寂 %d/%d" % [GameManager.turn, _phase_name(GameManager.phase), GameManager.dead_turns, GameManager.DEAD_TURNS]
-	# 重建手牌视图
+	status_label.text = "T%d  %s  死寂%d/%d" % [GameManager.turn, _phase_name(GameManager.phase), GameManager.dead_turns, GameManager.DEAD_TURNS]
 	for v in card_views:
 		v.queue_free()
 	card_views.clear()
@@ -43,10 +48,10 @@ func _refresh() -> void:
 		var v = Button.new()
 		v.set_script(load("res://src/ui/RuleCardView.gd"))
 		v.setup(c, i)
+		v.custom_minimum_size = Vector2(140, 70)
 		v.selected.connect(_on_card_selected)
 		hand_container.add_child(v)
 		card_views.append(v)
-	# phase 1 = LAYOUT
 	execute_button.disabled = (GameManager.phase != 1) or GameManager.pillars.is_empty()
 
 func _phase_name(p: int) -> String:
@@ -62,8 +67,7 @@ func _on_card_selected(idx: int) -> void:
 func _on_cell_clicked(coord: Vector2i) -> void:
 	if grid_renderer.selected_card_idx < 0:
 		return
-	var ok = GameManager.play_card(grid_renderer.selected_card_idx, coord)
-	if ok:
+	if GameManager.play_card(grid_renderer.selected_card_idx, coord):
 		grid_renderer.select_card(-1)
 
 func _on_execute() -> void:

@@ -33,6 +33,7 @@ var all_card_defs: Array = []
 signal state_changed
 signal reaction_applied(reaction)
 signal game_over(won: bool, message: String)
+signal flash_cell(coord: Vector2i)
 
 func _ready() -> void:
 	Engine.get_main_loop().set_auto_accept_quit(true)
@@ -111,6 +112,19 @@ func play_card(hand_idx: int, coord: Vector2i) -> bool:
 	state_changed.emit()
 	return true
 
+func remove_pillar(coord: Vector2i) -> bool:
+	if phase != Phase.LAYOUT:
+		return false
+	var cell = grid.get_cell(coord)
+	if cell == null or cell.pillar == null:
+		return false
+	var p = cell.pillar
+	pillars.erase(p)
+	cell.pillar = null
+	energy.current = min(energy.max_value, energy.current + 1)
+	state_changed.emit()
+	return true
+
 func execute() -> void:
 	if phase != Phase.LAYOUT:
 		return
@@ -125,7 +139,6 @@ func execute() -> void:
 		dead_turns += 1
 	else:
 		dead_turns = 0
-	decay_pillars()
 	if chain_total >= TARGET:
 		game_over.emit(true, "胜利! 达成 %d 连锁" % chain_total)
 		phase = Phase.LAYOUT
@@ -164,16 +177,12 @@ func push_dust() -> void:
 			if c.states.get(State.DUST, 0) > 1:
 				continue
 			var dst = c.coord
-			var fell_off = false
 			for _i in range(wind_speed):
-				dst = dst + dir_vec
-				if not grid.is_in_bounds(dst):
-					fell_off = true
-					break
-			if fell_off:
-				moves.append([c.coord, null])
-			else:
-				moves.append([c.coord, dst])
+				var nx = dst + dir_vec
+				if not grid.is_in_bounds(nx):
+					break    # 反弹: 碰到边界停下来,不下桌
+				dst = nx
+			moves.append([c.coord, dst])
 	for m in moves:
 		var src = grid.get_cell(m[0])
 		var turns_left = src.states.get(State.DUST, 0)
@@ -214,3 +223,5 @@ func decay_pillars() -> void:
 
 func _on_reaction(reaction) -> void:
 	reaction_applied.emit(reaction)
+	for c in reaction.affected:
+		flash_cell.emit(c)

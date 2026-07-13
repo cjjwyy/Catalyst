@@ -12,62 +12,100 @@ offset_left = 0.0
 offset_top = 0.0
 offset_right = 1280.0
 offset_bottom = 800.0
-color = Color(0.03, 0.03, 0.04, 1)
+color = Color(0.03, 0.03, 0.05, 1)
 
 [node name="GridRenderer" type="Node2D" parent="."]
 unique_name_in_owner = true
 script = ExtResource("2_grid")
 
+[node name="HelpButton" type="Button" parent="."]
+offset_left = 1230.0
+offset_top = 10.0
+offset_right = 1268.0
+offset_bottom = 36.0
+text = "?"
+
+[node name="HelpPanel" type="ColorRect" parent="."]
+visible = false
+offset_left = 340.0
+offset_top = 200.0
+offset_right = 940.0
+offset_bottom = 600.0
+color = Color(0.05, 0.05, 0.08, 0.95)
+
+[node name="HelpLabel" type="Label" parent="HelpPanel"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 584.0
+offset_bottom = 388.0
+theme_override_font_sizes/font = 14
+text = "目标: 累计连锁达到 100 即胜利
+连续 10 回合无连锁则失败
+
+操作:
+1. 左键点手牌 → 选中高亮
+2. 左键点网格空格 → 放置规则柱 (消耗 1 能量)
+3. 右键点已放置的规则柱 → 撤回 (退能)
+4. 点「执行演化」→ 观看连锁反应
+5. 每回合抽 3 张牌、恢复能量至 3
+
+元素: 水体·岩石·土壤·蒸汽·熔岩·植物
+规则柱: 黄框标注, 左上数字 = 剩余回合
+催化剂尘: 金色呼吸圆点, 连线 = 尘团块
+风: 网格右上箭头+数字, 每回合推动陈尘"
+
 [node name="ChainCounter" type="Label" parent="."]
 offset_left = 960.0
-offset_top = 20.0
+offset_top = 12.0
 offset_right = 1260.0
-offset_bottom = 80.0
-theme_override_font_sizes/font = 28
+offset_bottom = 52.0
+theme_override_font_sizes/font = 26
 text = "连锁: 0"
 script = ExtResource("3_chain")
 
 [node name="TotalCounter" type="Label" parent="."]
 offset_left = 960.0
-offset_top = 80.0
+offset_top = 54.0
 offset_right = 1260.0
-offset_bottom = 120.0
-theme_override_font_sizes/font = 18
+offset_bottom = 82.0
+theme_override_font_sizes/font = 16
 text = "总和: 0 / 100"
 
 [node name="EnergyLabel" type="Label" parent="."]
 offset_left = 20.0
-offset_top = 20.0
-offset_right = 400.0
-offset_bottom = 60.0
+offset_top = 12.0
+offset_right = 148.0
+offset_bottom = 46.0
 theme_override_font_sizes/font = 18
 text = "能量: 3/3"
 
 [node name="StatusLabel" type="Label" parent="."]
 offset_left = 20.0
-offset_top = 60.0
-offset_right = 400.0
-offset_bottom = 100.0
-theme_override_font_sizes/font = 16
-text = "回合 0 · 阶段 布局 · 死寂 0/10"
-
-[node name="HandContainer" type="HBoxContainer" parent="."]
-offset_left = 20.0
-offset_top = 660.0
-offset_right = 1260.0
-offset_bottom = 770.0
-
-[node name="ExecuteButton" type="Button" parent="."]
-offset_left = 1080.0
-offset_top = 660.0
-offset_right = 1240.0
-offset_bottom = 720.0
-text = "执行演化"
+offset_top = 48.0
+offset_right = 148.0
+offset_bottom = 80.0
+theme_override_font_sizes/font = 14
+text = "T0  布局"
 
 [node name="HintLabel" type="Label" parent="."]
 offset_left = 20.0
-offset_top = 100.0
-offset_right = 700.0
-offset_bottom = 130.0
-theme_override_font_sizes/font = 12
-text = "点手牌→点网格放置 (消耗1能量) → 点执行演化看连锁"
+offset_top = 84.0
+offset_right = 148.0
+offset_bottom = 120.0
+theme_override_font_sizes/font = 11
+text = "1.点手牌 2.点网格
+右键 = 撤回  ? = 帮助"
+
+[node name="HandContainer" type="HBoxContainer" parent="."]
+offset_left = 160.0
+offset_top = 580.0
+offset_right = 960.0
+offset_bottom = 700.0
+theme_override_constants/separation = 8
+
+[node name="ExecuteButton" type="Button" parent="."]
+offset_left = 1000.0
+offset_top = 600.0
+offset_right = 1140.0
+offset_bottom = 650.0
+text = "执行演化"

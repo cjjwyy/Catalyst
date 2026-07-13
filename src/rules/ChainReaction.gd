@@ -33,7 +33,7 @@ func execute(grid: Grid, pillars: Array) -> int:
 						empty_dust_cells.append(c2)
 				# 每次播撒 3 粒尘,形成簇状
 				for _i in range(min(3, empty_dust_cells.size())):
-					empty_dust_cells.pick_random().add_state(State.DUST, 3)
+					empty_dust_cells.pick_random().add_state(State.DUST, 5)
 					empty_dust_cells.shuffle()
 			if r.affected.size() > 0:
 				for c in r.affected:
@@ -78,7 +78,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 						empty_dust_cells.append(c2)
 				# 每次播撒 3 粒尘,形成簇状
 				for _i in range(min(3, empty_dust_cells.size())):
-					empty_dust_cells.pick_random().add_state(State.DUST, 3)
+					empty_dust_cells.pick_random().add_state(State.DUST, 5)
 					empty_dust_cells.shuffle()
 			if r.affected.size() > 0:
 				for c in r.affected:

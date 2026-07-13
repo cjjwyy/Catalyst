@@ -31,8 +31,10 @@ var GameManager: Node = null
 var grid: Grid = null
 var selected_card_idx: int = -1
 var hover_cell: Vector2i = Vector2i(-1, -1)
+var flash_cells: Dictionary = {}  # coord -> flash_start_ms
 
 signal cell_clicked(coord: Vector2i)
+signal cell_right_clicked(coord: Vector2i)
 
 func set_grid(g) -> void:
 	grid = g
@@ -40,6 +42,10 @@ func set_grid(g) -> void:
 
 func select_card(idx: int) -> void:
 	selected_card_idx = idx
+	queue_redraw()
+
+func on_flash(coord: Vector2i) -> void:
+	flash_cells[coord] = Time.get_ticks_msec()
 	queue_redraw()
 
 func _draw() -> void:
@@ -71,13 +77,35 @@ func _draw() -> void:
 	if selected_card_idx >= 0 and hover_cell.x >= 0:
 		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)
+	# 链式反馈: 闪烁白块
+	var now = Time.get_ticks_msec()
+	var expired: Array = []
+	for coord in flash_cells.keys():
+		var age = now - flash_cells[coord]
+		if age > 300:
+			expired.append(coord)
+			continue
+		var a = 1.0 - age / 300.0
+		var fr = Rect2(GRID_OFFSET + Vector2(coord.x, coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+		draw_rect(fr, Color(1, 1, 1, a * 0.6), true)
+	for c in expired:
+		flash_cells.erase(c)
+	# 催化剂尘连线: 相邻尘格画金线
+	for c in grid.all_cells():
+		if c.has_state(State.DUST):
+			var cp = GRID_OFFSET + Vector2(c.coord.x, c.coord.y) * CELL_SIZE + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+			for nb in grid.neighbors(c.coord):
+				if nb.has_state(State.DUST) and nb.coord.x >= c.coord.x and nb.coord.y >= c.coord.y:
+					var np = GRID_OFFSET + Vector2(nb.coord.x, nb.coord.y) * CELL_SIZE + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+					draw_line(cp, np, Color(0.9, 0.8, 0.2, 0.4), 2)
 	# 生命剩余角标
 	for p in (GameManager.pillars if GameManager != null else []):
-		var rect = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
-		draw_string(_font(), rect.position + Vector2(4, 14), str(p.life_remaining), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,0.4))
+		var pr = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+		draw_string(_font(), pr.position + Vector2(4, 14), str(p.life_remaining), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,0.4))
+	# 风指示器(网格右上)
 	if GameManager != null:
 		var wind_text = DIR_CHARS[GameManager.wind_dir] + str(GameManager.wind_speed)
-		draw_string(_font(), GRID_OFFSET + Vector2(0, -20), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color(1, 0.8, 0.3))
+		draw_string(_font(), GRID_OFFSET + Vector2(grid.w * CELL_SIZE + 8, -16), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, Color(1, 0.7, 0.2))
 	_draw_legend()
 
 func _draw_legend() -> void:
@@ -131,4 +159,10 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if coord.x >= 0:
 			cell_clicked.emit(coord)
+			get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
+		# 右键撤回规则柱
+		if coord.x >= 0 and GameManager != null:
+			if GameManager.remove_pillar(coord):
+				select_card(-1)
 			get_viewport().set_input_as_handled()
