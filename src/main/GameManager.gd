@@ -18,6 +18,7 @@ const DIR_CHARS = ["^", ">", "v", "<"]
 const CHAOS_ELEMENTS = [Element.WATER, Element.STONE, Element.EARTH, Element.STEAM, Element.LAVA, Element.PLANT]
 
 var phase: int = Phase.LAYOUT
+var game_ended: bool = false
 var wind_dir: int = 0
 var wind_speed: int = 1
 var turn: int = 0
@@ -93,7 +94,7 @@ func _load_level(path: String) -> Grid:
 	return g
 
 func can_play_card() -> bool:
-	return phase == Phase.LAYOUT and energy.can_play() and hand.hand_size() > 0
+	return not game_ended and phase == Phase.LAYOUT and energy.can_play() and hand.hand_size() > 0
 
 func play_card(hand_idx: int, coord: Vector2i) -> bool:
 	if not can_play_card():
@@ -126,7 +127,7 @@ func remove_pillar(coord: Vector2i) -> bool:
 	return true
 
 func execute() -> void:
-	if phase != Phase.LAYOUT:
+	if phase != Phase.LAYOUT or game_ended:
 		return
 	phase = Phase.EVOLVE
 	state_changed.emit()
@@ -140,14 +141,12 @@ func execute() -> void:
 	else:
 		dead_turns = 0
 	if chain_total >= TARGET:
+		game_ended = true
 		game_over.emit(true, "胜利! 达成 %d 连锁" % chain_total)
-		phase = Phase.LAYOUT
-		state_changed.emit()
 		return
 	if dead_turns >= DEAD_TURNS:
+		game_ended = true
 		game_over.emit(false, "失败: 世界进入死寂")
-		phase = Phase.LAYOUT
-		state_changed.emit()
 		return
 	end_turn()
 
