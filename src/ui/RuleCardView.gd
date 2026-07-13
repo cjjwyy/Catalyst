@@ -19,12 +19,28 @@ func refresh() -> void:
 func _label() -> String:
 	if card == null:
 		return "-"
-	var k = ""
 	match card.kind:
-		RuleCard.Kind.TRANSFORM: k = "转化"
-		RuleCard.Kind.MULTIPLY: k = "增殖"
-		RuleCard.Kind.EXTINCTION: k = "灭绝"
-	return "%s [%s r%d]" % [card.display_name, k, card.radius]
+		RuleCard.Kind.TRANSFORM:
+			return "转化\n%s 接触 %s\n→ %s\n(r%d, %d回合)" % [
+				Element.NAMES.get(card.trigger_element,"?"),
+				Element.NAMES.get(card.contact_element,"?"),
+				Element.NAMES.get(card.result_element,"?"),
+				card.radius, card.life]
+		RuleCard.Kind.MULTIPLY:
+			return "增殖\n%s 相邻 %s\n→ 扩散 %s\n(r%d, %d回合)" % [
+				Element.NAMES.get(card.trigger_element,"?"),
+				Element.NAMES.get(card.contact_element,"?"),
+				Element.NAMES.get(card.result_element,"?"),
+				card.radius, card.life]
+		RuleCard.Kind.EXTINCTION:
+			var s = "灭绝\n%s ≥%d个\n→ 清空所有%s" % [
+				Element.NAMES.get(card.trigger_element,"?"),
+				card.extinct_threshold,
+				Element.NAMES.get(card.trigger_element,"?")]
+			if card.also_clear != Element.NONE:
+				s += "\n也清%s" % Element.NAMES.get(card.also_clear,"?")
+			return s + "\n(r%d, %d回合)" % [card.radius, card.life]
+		_: return ""
 
 func _tooltip() -> String:
 	if card == null: return ""

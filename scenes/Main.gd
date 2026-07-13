@@ -10,6 +10,8 @@ var hand_container: HBoxContainer
 var execute_button: Button
 var help_button: Button
 var help_panel: ColorRect
+var gameover_panel: ColorRect
+var gameover_label: Label
 var card_views: Array = []
 
 func _ready() -> void:
@@ -23,6 +25,8 @@ func _ready() -> void:
 	execute_button = $ExecuteButton
 	help_button = $HelpButton
 	help_panel = $HelpPanel
+	gameover_panel = $GameOverPanel
+	gameover_label = $GameOverPanel/GameOverLabel
 	execute_button.pressed.connect(_on_execute)
 	help_button.pressed.connect(func(): help_panel.visible = not help_panel.visible)
 	GameManager.state_changed.connect(_refresh)
@@ -48,7 +52,7 @@ func _refresh() -> void:
 		var v = Button.new()
 		v.set_script(load("res://src/ui/RuleCardView.gd"))
 		v.setup(c, i)
-		v.custom_minimum_size = Vector2(140, 70)
+		v.custom_minimum_size = Vector2(150, 90)
 		v.selected.connect(_on_card_selected)
 		hand_container.add_child(v)
 		card_views.append(v)
@@ -78,5 +82,7 @@ func _on_reaction(_r) -> void:
 	chain_counter.set_chain(GameManager.chain_total)
 
 func _on_game_over(won: bool, msg: String) -> void:
-	status_label.text = msg
+	gameover_label.text = msg
+	gameover_label.add_theme_color_override("font_color", Color.GREEN if won else Color.RED)
+	gameover_panel.visible = true
 	execute_button.disabled = true
