@@ -23,7 +23,7 @@ func apply(grid: Grid) -> void:
 			cell.element = card.result_element
 			cell.clear_states()
 			affected.append(target_coord)
-			if card.self_replace != Element.NONE and card.contact_element != Element.NONE:
+			if card.contact_element != Element.NONE:
 				# 在锚定范围内找第一个匹配 contact_element 的格子替换之
 				for n in grid.cells_in_radius(anchor, card.radius):
 					if n.coord == target_coord:

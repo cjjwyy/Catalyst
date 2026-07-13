@@ -15,6 +15,10 @@ static func run_all() -> bool:
 	ok = ok and _test_wind_push_dust()
 	ok = ok and _test_dust_blob_extends_scope()
 	ok = ok and _test_chaos_detection()
+	ok = ok and _test_ore_harvest()
+	ok = ok and _test_grass_wither()
+	ok = ok and _test_steam_evaporate()
+	ok = ok and _test_extinct_counts_grass()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -283,4 +287,76 @@ static func _test_chaos_detection() -> bool:
 	assert(n > g.w * g.h / 2, "should be majority (got %d/36)" % n)
 	assert(n >= 35, "33+ plants needed, got %d" % n)
 	print("test_chaos_detection OK (plant=%d)" % n)
+	return true
+
+static func _test_ore_harvest() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.PLANT)
+	_put(g, 2, 1, Element.ORE)
+	var card = _make_card({
+		"id":"harvest","name":"采掘","kind":"TRANSFORM",
+		"trigger_element":"PLANT","contact_element":"ORE",
+		"result_element":"NONE","self_replace":"NONE",
+		"radius":2,"life":4,"chain_reward":5
+	})
+	var p = RulePillar.new(card, Vector2i(1,1), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(chain == 5, "harvest should give 5 chain, got %d" % chain)
+	assert(g.get_cell(Vector2i(1,1)).element == Element.NONE, "plant gone")
+	assert(g.get_cell(Vector2i(2,1)).element == Element.NONE, "ore gone")
+	print("test_ore_harvest OK (chain=%d)" % chain)
+	return true
+
+static func _test_grass_wither() -> bool:
+	var g = Grid.new(6, 6)
+	g.get_cell(Vector2i(2,2)).element = Element.GRASS
+	g.get_cell(Vector2i(2,2)).decay_timer = 0
+	var c = g.get_cell(Vector2i(2,2))
+	for _i in range(2):
+		var hf = false
+		for n in g.neighbors(c.coord):
+			if n.element in [Element.PLANT, Element.GRASS]:
+				hf = true; break
+		if not hf: c.decay_timer += 1
+		else: c.decay_timer = 0
+		if c.decay_timer >= 2:
+			c.element = Element.EARTH
+			c.decay_timer = 0
+	assert(g.get_cell(Vector2i(2,2)).element == Element.EARTH, "grass should wither to earth")
+	print("test_grass_wither OK")
+	return true
+
+static func _test_steam_evaporate() -> bool:
+	var g = Grid.new(6, 6)
+	g.get_cell(Vector2i(3,3)).element = Element.STEAM
+	g.get_cell(Vector2i(3,3)).placed_at_turn = 0
+	var turn = 2
+	for c in g.all_cells():
+		if c.element == Element.STEAM and turn - c.placed_at_turn >= 2:
+			c.element = Element.NONE
+	assert(g.get_cell(Vector2i(3,3)).element == Element.NONE, "steam should vanish")
+	print("test_steam_evaporate OK")
+	return true
+
+static func _test_extinct_counts_grass() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.PLANT)
+	_put(g, 2, 1, Element.PLANT)
+	_put(g, 1, 2, Element.PLANT)
+	_put(g, 2, 2, Element.GRASS)
+	_put(g, 0, 2, Element.GRASS)
+	var card = _make_card({
+		"id":"extinct","name":"丛林灭绝","kind":"EXTINCTION",
+		"trigger_element":"PLANT","result_element":"NONE",
+		"radius":2,"extinct_threshold":5,"also_count":"GRASS"
+	})
+	var p = RulePillar.new(card, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	var p_left = g.count_element(Element.PLANT)
+	var g_left = g.count_element(Element.GRASS)
+	assert(p_left == 0, "all plants cleared (got %d)" % p_left)
+	assert(g_left == 0, "all grass cleared (got %d)" % g_left)
+	print("test_extinct_counts_grass OK (chain=%d)" % chain)
 	return true
