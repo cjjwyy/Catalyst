@@ -46,7 +46,8 @@ func apply(grid: Grid) -> void:
 			var scope = grid.cells_in_radius(anchor, card.radius)
 			var candidates: Array = []
 			for c in scope:
-				if c.element == card.trigger_element:
+				if c.element == card.trigger_element or \
+				   (card.also_count != Element.NONE and c.element == card.also_count):
 					candidates.append(c)
 			if candidates.size() >= card.extinct_threshold:
 				for c in candidates:

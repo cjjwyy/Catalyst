@@ -18,6 +18,7 @@ enum Kind { TRANSFORM, MULTIPLY, EXTINCTION }
 @export var add_state: int = State.NONE
 @export var add_state_turns: int = 0
 @export var also_clear: int = Element.NONE   # EXTINCTION 触发时,同范围内清掉此元素(断燃料)
+@export var also_count: int = Element.NONE  # EXTINCTION: 计数时也包含此元素
 
 func from_dict(d: Dictionary) -> void:
 	id = d.get("id", "")
@@ -35,3 +36,4 @@ func from_dict(d: Dictionary) -> void:
 	add_state = State.from_string(d.get("add_state", "NONE"))
 	add_state_turns = int(d.get("add_state_turns", 0))
 	also_clear = Element.from_string(d.get("also_clear", "NONE"))
+	also_count = Element.from_string(d.get("also_count", "NONE"))

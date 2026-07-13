@@ -50,6 +50,8 @@ func _match_in_scope(grid: Grid, card: RuleCard, anchor: Vector2i, scope: Array)
 			for c in scope:
 				if c.element == card.trigger_element:
 					count += 1
+				elif card.also_count != Element.NONE and c.element == card.also_count:
+					count += 1
 			if count >= card.extinct_threshold:
 				# 每轮最多产出一个EXTINCTION Reaction
 				out.append(Reaction.new(card, anchor, anchor))
