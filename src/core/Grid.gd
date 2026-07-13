@@ -58,3 +58,6 @@ func count_element(elem: int) -> int:
 
 func total_cells() -> int:
 	return w * h
+
+func is_in_bounds(p: Vector2i) -> bool:
+	return p.x >= 0 and p.y >= 0 and p.x < w and p.y < h
