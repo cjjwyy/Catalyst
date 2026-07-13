@@ -9,7 +9,8 @@ func evaluate(grid: Grid, pillars: Array) -> Array:
 		if card == null:
 			continue
 		var scope = grid.cells_in_radius(pillar.coord, card.radius)
-		out.append_array(_match_in_scope(grid, card, pillar.coord, scope))
+		var expanded_scope = _expand_scope_for_dust(grid, scope)
+		out.append_array(_match_in_scope(grid, card, pillar.coord, expanded_scope))
 	return out
 
 # 只检查 changed 坐标涉及到的 pillar(仍按 pillar 半径判定)
@@ -25,6 +26,7 @@ func evaluate_restricted(grid: Grid, pillars: Array, changed: Array) -> Array:
 		if card == null:
 			continue
 		var scope = grid.cells_in_radius(pillar.coord, card.radius)
+		var expanded_scope = _expand_scope_for_dust(grid, scope)
 		# 只在 changed 命中该 pillar 范围时才检测
 		var hit = false
 		for c in scope:
@@ -33,7 +35,7 @@ func evaluate_restricted(grid: Grid, pillars: Array, changed: Array) -> Array:
 				break
 		if not hit:
 			continue
-		out.append_array(_match_in_scope(grid, card, pillar.coord, scope))
+		out.append_array(_match_in_scope(grid, card, pillar.coord, expanded_scope))
 	return out
 
 func _match_in_scope(grid: Grid, card: RuleCard, anchor: Vector2i, scope: Array) -> Array:
@@ -69,3 +71,45 @@ func _match_cell(grid: Grid, card: RuleCard, c: Cell, scope: Array) -> bool:
 		if not found:
 			return false
 	return true
+
+func _compute_components(grid: Grid) -> Dictionary:
+	var comp: Dictionary = {}
+	var visited: Dictionary = {}
+	var nid = 0
+	for c in grid.all_cells():
+		if c.has_state(State.DUST) and not visited.has(c.coord):
+			var queue: Array = [c.coord]
+			visited[c.coord] = true
+			while not queue.is_empty():
+				var cur = queue.pop_front()
+				comp[cur] = nid
+				for nb in grid.neighbors(cur):
+					var nc = grid.get_cell(nb.coord)
+					if nc != null and nc.has_state(State.DUST) and not visited.has(nb.coord):
+						visited[nb.coord] = true
+						queue.append(nb.coord)
+			nid += 1
+	return comp
+
+func _expand_scope_for_dust(grid: Grid, scope: Array) -> Array:
+	var has_dust = false
+	var seen_coords: Dictionary = {}
+	var expanded: Array = []
+	for c in scope:
+		expanded.append(c)
+		seen_coords[c.coord] = true
+		if c.has_state(State.DUST):
+			has_dust = true
+	if not has_dust:
+		return expanded
+	var components = _compute_components(grid)
+	for c in scope:
+		if c.has_state(State.DUST) and components.has(c.coord):
+			var cid = components[c.coord]
+			for coord in components.keys():
+				if components[coord] == cid and not seen_coords.has(coord):
+					var dc = grid.get_cell(coord)
+					if dc != null:
+						expanded.append(dc)
+						seen_coords[coord] = true
+	return expanded
