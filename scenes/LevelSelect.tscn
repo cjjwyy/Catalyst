@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/ui/LevelSelect.gd" id="1_ls"]
+
+[node name="LevelSelect" type="Control"]
+offset_right = 1280.0
+offset_bottom = 850.0
+script = ExtResource("1_ls")
