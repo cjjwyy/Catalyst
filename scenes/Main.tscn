@@ -131,3 +131,19 @@ offset_bottom = 110.0
 theme_override_font_sizes/font = 28
 horizontal_alignment = 1
 text = "胜利! 达成 100 连锁"
+
+[node name="NextButton" type="Button" parent="GameOverPanel"]
+visible = false
+offset_left = 60.0
+offset_top = 90.0
+offset_right = 220.0
+offset_bottom = 120.0
+text = "下一关"
+
+[node name="RetryButton" type="Button" parent="GameOverPanel"]
+visible = false
+offset_left = 360.0
+offset_top = 90.0
+offset_right = 520.0
+offset_bottom = 120.0
+text = "重试"
