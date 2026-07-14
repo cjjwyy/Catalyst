@@ -116,6 +116,13 @@ offset_right = 1260.0
 offset_bottom = 760.0
 text = "执行演化"
 
+[node name="MenuButton" type="Button" parent="."]
+offset_left = 1120.0
+offset_top = 680.0
+offset_right = 1260.0
+offset_bottom = 710.0
+text = "主菜单"
+
 [node name="GameOverPanel" type="ColorRect" parent="."]
 visible = false
 offset_left = 340.0

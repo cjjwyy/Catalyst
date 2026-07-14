@@ -132,6 +132,7 @@ func remove_pillar(coord: Vector2i) -> bool:
 	var p = cell.pillar
 	pillars.erase(p)
 	cell.pillar = null
+	hand.hand.append(p.card)   # 卡牌回到手牌
 	energy.current = min(energy.max_value, energy.current + 1)
 	state_changed.emit()
 	return true

@@ -14,6 +14,7 @@ var gameover_panel: ColorRect
 var gameover_label: Label
 var next_button: Button
 var retry_button: Button
+var menu_button: Button
 var card_views: Array = []
 
 func _ready() -> void:
@@ -33,6 +34,8 @@ func _ready() -> void:
 	retry_button = $GameOverPanel/RetryButton
 	next_button.pressed.connect(_on_next_level)
 	retry_button.pressed.connect(_on_retry)
+	menu_button = $MenuButton
+	menu_button.pressed.connect(_on_menu)
 	next_button.visible = false
 	retry_button.visible = false
 	execute_button.pressed.connect(_on_execute)
@@ -113,9 +116,18 @@ func _on_level_complete(_idx: int) -> void:
 	execute_button.disabled = true
 
 func _on_next_level() -> void:
-	get_tree().change_scene_to_file("res://scenes/LevelSelect.tscn")
+	GameManager.start_game(GameManager.level_manager.current_level)
+	gameover_panel.visible = false
+	next_button.visible = false
+	retry_button.visible = false
+	_refresh()
 
 func _on_retry() -> void:
 	GameManager.start_game(GameManager.level_manager.current_level)
 	gameover_panel.visible = false
-	get_node("/root/GameManager").state_changed.emit()
+	next_button.visible = false
+	retry_button.visible = false
+	_refresh()
+
+func _on_menu() -> void:
+	get_tree().change_scene_to_file("res://scenes/LevelSelect.tscn")
