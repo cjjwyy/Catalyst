@@ -19,6 +19,7 @@ static func run_all() -> bool:
 	ok = ok and _test_grass_wither()
 	ok = ok and _test_steam_evaporate()
 	ok = ok and _test_extinct_counts_grass()
+	ok = ok and _test_level_manager()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -359,4 +360,21 @@ static func _test_extinct_counts_grass() -> bool:
 	assert(p_left == 0, "all plants cleared (got %d)" % p_left)
 	assert(g_left == 0, "all grass cleared (got %d)" % g_left)
 	print("test_extinct_counts_grass OK (chain=%d)" % chain)
+	return true
+
+static func _test_level_manager() -> bool:
+	var LM = load("res://src/world/LevelManager.gd")
+	var lm = LM.new()
+	assert(lm.level_count() == 4, "should have 4 levels")
+	assert(lm.is_unlocked(0) == true, "level 0 unlocked")
+	assert(lm.is_unlocked(1) == false, "level 1 locked")
+	assert(lm.select(1) == false, "cannot select locked level")
+	assert(lm.select(0) == true, "can select level 0")
+	assert(lm.get_current().target == 100, "coast target 100")
+	lm.current_level = 0
+	assert(lm.advance() == true, "advance to level 1")
+	assert(lm.is_unlocked(1) == true, "level 1 now unlocked")
+	assert(lm.current_level == 1, "current is now 1")
+	assert(lm.get_current().target == 300, "jungle target 300")
+	print("test_level_manager OK")
 	return true
