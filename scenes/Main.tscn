@@ -31,6 +31,7 @@ offset_left = 340.0
 offset_top = 200.0
 offset_right = 940.0
 offset_bottom = 600.0
+mouse_filter = 2
 color = Color(0.05, 0.05, 0.08, 0.95)
 
 [node name="HelpLabel" type="Label" parent="HelpPanel"]
@@ -121,6 +122,7 @@ offset_left = 340.0
 offset_top = 280.0
 offset_right = 940.0
 offset_bottom = 420.0
+mouse_filter = 2
 color = Color(0.06, 0.06, 0.1, 0.96)
 
 [node name="GameOverLabel" type="Label" parent="GameOverPanel"]

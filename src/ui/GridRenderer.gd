@@ -1,7 +1,7 @@
 extends Node2D
 
 const CELL_SIZE = 64
-const GRID_OFFSET = Vector2(180, 30)
+const GRID_OFFSET = Vector2(180, 40)
 const DIR_CHARS = ["^", ">", "v", "<"]
 
 var COLORS = {
@@ -109,7 +109,7 @@ func _draw() -> void:
 	# 风指示器(网格左上角上方)
 	if GameManager != null:
 		var wind_text = "风向风速: %s%d" % [DIR_CHARS[GameManager.wind_dir], GameManager.wind_speed]
-		draw_string(_font(), GRID_OFFSET + Vector2(0, -24), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.7, 0.2))
+		draw_string(_font(), GRID_OFFSET + Vector2(0, -18), wind_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.7, 0.2))
 	_draw_legend()
 
 func _draw_legend() -> void:
