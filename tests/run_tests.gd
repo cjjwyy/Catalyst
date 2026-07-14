@@ -20,6 +20,7 @@ static func run_all() -> bool:
 	ok = ok and _test_steam_evaporate()
 	ok = ok and _test_extinct_counts_grass()
 	ok = ok and _test_level_manager()
+	ok = ok and _test_level_load()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -377,4 +378,19 @@ static func _test_level_manager() -> bool:
 	assert(lm.current_level == 1, "current is now 1")
 	assert(lm.get_current().target == 300, "jungle target 300")
 	print("test_level_manager OK")
+	return true
+
+static func _test_level_load() -> bool:
+	var LM = load("res://src/world/LevelManager.gd")
+	var lm = LM.new()
+	# 测试每关 JSON 能加载且 size/target 正确
+	for i in range(lm.level_count()):
+		var lvl = lm.get_level(i)
+		var f = FileAccess.open(lvl.path, FileAccess.READ)
+		assert(f != null, "level %d JSON not found at %s" % [i, lvl.path])
+		var data = JSON.parse_string(f.get_as_text())
+		f.close()
+		assert(int(data.size[0]) == lvl.size[0], "level %d size mismatch" % i)
+		assert(int(data.target) == lvl.target, "level %d target mismatch" % i)
+	print("test_level_load OK (4 levels verified)")
 	return true
