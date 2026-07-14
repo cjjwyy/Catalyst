@@ -1,7 +1,8 @@
 extends Node2D
 
-const CELL_SIZE = 64
+const MAX_CELL_SIZE = 64
 const GRID_OFFSET = Vector2(180, 40)
+var cell_size: int = 64
 const DIR_CHARS = ["^", ">", "v", "<"]
 
 var COLORS = {
@@ -42,6 +43,10 @@ signal cell_right_clicked(coord: Vector2i)
 
 func set_grid(g) -> void:
 	grid = g
+	# 动态计算 cell_size: 适配窗口, 最大 64px
+	var avail_w = 1500 - int(GRID_OFFSET.x) - 220   # 右侧留 220 给图例
+	var avail_h = 1000 - int(GRID_OFFSET.y) - 120   # 下方留 120 给手牌
+	cell_size = min(MAX_cell_size, avail_w / grid.w, avail_h / grid.h)
 	queue_redraw()
 
 func select_card(idx: int) -> void:
@@ -58,7 +63,7 @@ func _draw() -> void:
 	for y in range(grid.h):
 		for x in range(grid.w):
 			var c = grid.get_cell(Vector2i(x, y))
-			var rect = Rect2(GRID_OFFSET + Vector2(x, y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+			var rect = Rect2(GRID_OFFSET + Vector2(x, y) * cell_size, Vector2(cell_size, cell_size))
 			var col = COLORS.get(c.element, Color.BLACK)
 			draw_rect(rect, col, true)
 			draw_rect(rect, Color(0.2, 0.2, 0.22), false, 1.5)
@@ -67,8 +72,8 @@ func _draw() -> void:
 				draw_string(_font(), rect.position + Vector2(6, 26), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0,0,0,0.55))
 				draw_string(_font(), rect.position + Vector2(4, 24), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1,1,1))
 			if c.has_state(State.DUST):
-				var cx = rect.position.x + CELL_SIZE / 2.0
-				var cy = rect.position.y + CELL_SIZE / 2.0
+				var cx = rect.position.x + cell_size / 2.0
+				var cy = rect.position.y + cell_size / 2.0
 				# 心跳脉冲: sin 周期约 1.2 秒, 半径 4-8 之间呼吸
 				var r = 4.0 + 4.0 * sin(Time.get_ticks_msec() / 190.0)
 				draw_circle(Vector2(cx, cy), r, Color(0.9, 0.8, 0.2, 0.7))
@@ -79,7 +84,7 @@ func _draw() -> void:
 			if c.has_state(State.BURNING):
 				draw_rect(rect.grow(-6), Color(1, 0.3, 0, 0.32), true)
 	if selected_card_idx >= 0 and hover_cell.x >= 0:
-		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)
 	# 链式反馈: 闪烁白块
 	var now = Time.get_ticks_msec()
@@ -90,21 +95,21 @@ func _draw() -> void:
 			expired.append(coord)
 			continue
 		var a = 1.0 - age / 300.0
-		var fr = Rect2(GRID_OFFSET + Vector2(coord.x, coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+		var fr = Rect2(GRID_OFFSET + Vector2(coord.x, coord.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(fr, Color(1, 1, 1, a * 0.6), true)
 	for c in expired:
 		flash_cells.erase(c)
 	# 催化剂尘连线: 相邻尘格画金线
 	for c in grid.all_cells():
 		if c.has_state(State.DUST):
-			var cp = GRID_OFFSET + Vector2(c.coord.x, c.coord.y) * CELL_SIZE + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+			var cp = GRID_OFFSET + Vector2(c.coord.x, c.coord.y) * cell_size + Vector2(cell_size / 2.0, cell_size / 2.0)
 			for nb in grid.neighbors(c.coord):
 				if nb.has_state(State.DUST) and nb.coord.x >= c.coord.x and nb.coord.y >= c.coord.y:
-					var np = GRID_OFFSET + Vector2(nb.coord.x, nb.coord.y) * CELL_SIZE + Vector2(CELL_SIZE / 2.0, CELL_SIZE / 2.0)
+					var np = GRID_OFFSET + Vector2(nb.coord.x, nb.coord.y) * cell_size + Vector2(cell_size / 2.0, cell_size / 2.0)
 					draw_line(cp, np, Color(0.9, 0.8, 0.2, 0.4), 2)
 	# 生命剩余角标
 	for p in (GameManager.pillars if GameManager != null else []):
-		var pr = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * CELL_SIZE, Vector2(CELL_SIZE, CELL_SIZE))
+		var pr = Rect2(GRID_OFFSET + Vector2(p.coord.x, p.coord.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_string(_font(), pr.position + Vector2(4, 14), str(p.life_remaining), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(1,1,0.4))
 	# 风指示器(网格左上角上方)
 	if GameManager != null:
@@ -114,7 +119,7 @@ func _draw() -> void:
 
 func _draw_legend() -> void:
 	# 右侧网格旁画一行:色块 + 元素名,列出所有元素及"规则柱"
-	var origin = GRID_OFFSET + Vector2(grid.w * CELL_SIZE + 20, 0)
+	var origin = GRID_OFFSET + Vector2(grid.w * cell_size + 20, 0)
 	var items = [
 		[Element.WATER, "水"],
 		[Element.STONE, "岩"],
@@ -148,8 +153,8 @@ func world_to_coord(wp: Vector2) -> Vector2i:
 	var local = wp - GRID_OFFSET
 	if local.x < 0 or local.y < 0:
 		return Vector2i(-1, -1)
-	var x = int(local.x / CELL_SIZE)
-	var y = int(local.y / CELL_SIZE)
+	var x = int(local.x / cell_size)
+	var y = int(local.y / cell_size)
 	if x >= grid.w or y >= grid.h:
 		return Vector2i(-1, -1)
 	return Vector2i(x, y)
