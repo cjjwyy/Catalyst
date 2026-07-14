@@ -2,7 +2,6 @@ extends Node
 
 enum Phase { OBSERVE, LAYOUT, EVOLVE }
 
-const TARGET = 100
 const DEAD_TURNS = 10
 const RULES_PATH = "res://data/rules.json"
 const LEVEL_PATH = "res://data/coast.json"
@@ -20,6 +19,8 @@ const CHAOS_NAME = {Element.WATER:"水",Element.STONE:"岩",Element.EARTH:"土",
 
 var phase: int = Phase.LAYOUT
 var game_ended: bool = false
+var level_manager: LevelManager = LevelManager.new()
+var target: int = 100
 var wind_dir: int = 0
 var wind_speed: int = 1
 var turn: int = 0
@@ -36,6 +37,7 @@ signal state_changed
 signal reaction_applied(reaction)
 signal game_over(won: bool, message: String)
 signal flash_cell(coord: Vector2i)
+signal level_complete(level_idx: int)
 
 func _ready() -> void:
 	Engine.get_main_loop().set_auto_accept_quit(true)
@@ -44,13 +46,20 @@ func _ready() -> void:
 		push_error("Catalyst 自检失败")
 	start_game()
 
-func start_game() -> void:
+func start_game(level_idx: int = -1) -> void:
+	if level_idx >= 0:
+		level_manager.current_level = level_idx
+	var lvl = level_manager.get_current()
+	target = int(lvl.target)
 	all_card_defs = _load_rules()
-	grid = _load_level(LEVEL_PATH)
+	grid = _load_level(lvl.path)
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
 	hand.refill_to(5)
 	energy = EnergySystem.new(3)
+	chain_total = 0
+	dead_turns = 0
+	game_ended = false
 	phase = Phase.LAYOUT
 	_reroll_wind()
 	state_changed.emit()
@@ -141,9 +150,9 @@ func execute() -> void:
 		dead_turns += 1
 	else:
 		dead_turns = 0
-	if chain_total >= TARGET:
+	if chain_total >= target:
 		game_ended = true
-		game_over.emit(true, "胜利! 达成 %d 连锁" % chain_total)
+		level_complete.emit(level_manager.current_level)
 		return
 	if dead_turns >= DEAD_TURNS:
 		game_ended = true
