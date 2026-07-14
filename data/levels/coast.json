@@ -1,0 +1,43 @@
+{
+  "name": "海岸·教学",
+  "size": [10, 10],
+  "target": 100,
+  "elements": [
+    {"coord": [1, 2], "element": "WATER"},
+    {"coord": [2, 2], "element": "WATER"},
+    {"coord": [2, 1], "element": "STONE"},
+    {"coord": [2, 3], "element": "LAVA"},
+    {"coord": [3, 2], "element": "WATER"},
+
+    {"coord": [7, 2], "element": "WATER"},
+    {"coord": [8, 2], "element": "WATER"},
+    {"coord": [8, 3], "element": "WATER"},
+    {"coord": [7, 3], "element": "LAVA"},
+
+    {"coord": [5, 5], "element": "WATER"},
+    {"coord": [5, 6], "element": "LAVA"},
+    {"coord": [4, 5], "element": "WATER"},
+
+    {"coord": [5, 1], "element": "PLANT"},
+    {"coord": [6, 1], "element": "PLANT"},
+    {"coord": [5, 2], "element": "PLANT"},
+    {"coord": [7, 5], "element": "PLANT"},
+    {"coord": [8, 5], "element": "PLANT"},
+    {"coord": [7, 6], "element": "PLANT"},
+    {"coord": [8, 6], "element": "PLANT"},
+    {"coord": [6, 7], "element": "PLANT"},
+    {"coord": [7, 7], "element": "PLANT"},
+
+    {"coord": [1, 7], "element": "PLANT"},
+    {"coord": [2, 7], "element": "PLANT"},
+    {"coord": [1, 8], "element": "PLANT"},
+
+    {"coord": [0, 8], "element": "ORE"},
+    {"coord": [9, 0], "element": "ORE"},
+    {"coord": [4, 4], "element": "ORE"},
+
+    {"coord": [0, 0], "element": "STONE"},
+    {"coord": [9, 9], "element": "STONE"},
+    {"coord": [3, 3], "element": "STONE"}
+  ]
+}

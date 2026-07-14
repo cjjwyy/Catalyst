@@ -1,0 +1,46 @@
+{
+  "name": "高山·精炼",
+  "size": [14, 14],
+  "target": 700,
+  "elements": [
+    {"coord": [1, 1], "element": "STONE"},
+    {"coord": [2, 1], "element": "STONE"},
+    {"coord": [3, 1], "element": "STONE"},
+    {"coord": [10, 1], "element": "STONE"},
+    {"coord": [11, 1], "element": "STONE"},
+    {"coord": [12, 1], "element": "STONE"},
+    {"coord": [1, 12], "element": "STONE"},
+    {"coord": [2, 12], "element": "STONE"},
+    {"coord": [10, 12], "element": "STONE"},
+    {"coord": [11, 12], "element": "STONE"},
+    {"coord": [12, 12], "element": "STONE"},
+    {"coord": [6, 6], "element": "STONE"},
+    {"coord": [7, 6], "element": "STONE"},
+    {"coord": [6, 7], "element": "STONE"},
+    {"coord": [7, 7], "element": "STONE"},
+
+    {"coord": [0, 1], "element": "ORE"},
+    {"coord": [13, 1], "element": "ORE"},
+    {"coord": [0, 12], "element": "ORE"},
+    {"coord": [13, 12], "element": "ORE"},
+    {"coord": [5, 5], "element": "ORE"},
+    {"coord": [8, 5], "element": "ORE"},
+    {"coord": [5, 8], "element": "ORE"},
+    {"coord": [8, 8], "element": "ORE"},
+
+    {"coord": [4, 3], "element": "WATER"},
+    {"coord": [4, 4], "element": "WATER"},
+    {"coord": [4, 5], "element": "LAVA"},
+    {"coord": [9, 3], "element": "WATER"},
+    {"coord": [9, 4], "element": "WATER"},
+    {"coord": [9, 5], "element": "LAVA"},
+    {"coord": [6, 10], "element": "WATER"},
+    {"coord": [7, 10], "element": "WATER"},
+    {"coord": [7, 11], "element": "LAVA"},
+
+    {"coord": [3, 7], "element": "PLANT"},
+    {"coord": [10, 7], "element": "PLANT"},
+    {"coord": [6, 3], "element": "PLANT"},
+    {"coord": [7, 3], "element": "PLANT"}
+  ]
+}

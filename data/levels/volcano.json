@@ -1,0 +1,55 @@
+{
+  "name": "火山口·终局",
+  "size": [16, 16],
+  "target": 1500,
+  "elements": [
+    {"coord": [2, 2], "element": "LAVA"},
+    {"coord": [3, 2], "element": "LAVA"},
+    {"coord": [2, 3], "element": "LAVA"},
+    {"coord": [3, 3], "element": "LAVA"},
+
+    {"coord": [12, 2], "element": "LAVA"},
+    {"coord": [13, 2], "element": "LAVA"},
+    {"coord": [12, 3], "element": "LAVA"},
+    {"coord": [13, 3], "element": "LAVA"},
+
+    {"coord": [2, 12], "element": "LAVA"},
+    {"coord": [3, 12], "element": "LAVA"},
+    {"coord": [2, 13], "element": "LAVA"},
+    {"coord": [3, 13], "element": "LAVA"},
+
+    {"coord": [12, 12], "element": "LAVA"},
+    {"coord": [13, 12], "element": "LAVA"},
+    {"coord": [12, 13], "element": "LAVA"},
+    {"coord": [13, 13], "element": "LAVA"},
+
+    {"coord": [7, 7], "element": "LAVA"},
+    {"coord": [8, 7], "element": "LAVA"},
+    {"coord": [7, 8], "element": "LAVA"},
+    {"coord": [8, 8], "element": "LAVA"},
+
+    {"coord": [0, 0], "element": "STONE"},
+    {"coord": [1, 0], "element": "STONE"},
+    {"coord": [0, 1], "element": "STONE"},
+    {"coord": [15, 15], "element": "STONE"},
+    {"coord": [14, 15], "element": "STONE"},
+    {"coord": [15, 14], "element": "STONE"},
+    {"coord": [0, 15], "element": "STONE"},
+    {"coord": [15, 0], "element": "STONE"},
+    {"coord": [5, 5], "element": "STONE"},
+    {"coord": [10, 5], "element": "STONE"},
+    {"coord": [5, 10], "element": "STONE"},
+    {"coord": [10, 10], "element": "STONE"},
+
+    {"coord": [6, 3], "element": "WATER"},
+    {"coord": [9, 3], "element": "WATER"},
+    {"coord": [6, 12], "element": "WATER"},
+    {"coord": [9, 12], "element": "WATER"},
+
+    {"coord": [5, 8], "element": "PLANT"},
+    {"coord": [10, 8], "element": "PLANT"},
+
+    {"coord": [7, 5], "element": "ORE"},
+    {"coord": [8, 10], "element": "ORE"}
+  ]
+}

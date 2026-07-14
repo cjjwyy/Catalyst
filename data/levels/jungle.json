@@ -1,0 +1,54 @@
+{
+  "name": "丛林·生长",
+  "size": [12, 12],
+  "target": 300,
+  "elements": [
+    {"coord": [1, 1], "element": "WATER"},
+    {"coord": [2, 1], "element": "WATER"},
+    {"coord": [3, 1], "element": "LAVA"},
+    {"coord": [8, 2], "element": "WATER"},
+    {"coord": [9, 2], "element": "WATER"},
+    {"coord": [9, 3], "element": "LAVA"},
+    {"coord": [2, 8], "element": "WATER"},
+    {"coord": [2, 9], "element": "LAVA"},
+
+    {"coord": [0, 3], "element": "PLANT"},
+    {"coord": [1, 3], "element": "PLANT"},
+    {"coord": [2, 3], "element": "PLANT"},
+    {"coord": [0, 4], "element": "PLANT"},
+    {"coord": [1, 4], "element": "PLANT"},
+    {"coord": [2, 4], "element": "PLANT"},
+    {"coord": [0, 5], "element": "PLANT"},
+    {"coord": [1, 5], "element": "PLANT"},
+
+    {"coord": [4, 6], "element": "PLANT"},
+    {"coord": [5, 6], "element": "PLANT"},
+    {"coord": [6, 6], "element": "PLANT"},
+    {"coord": [7, 6], "element": "PLANT"},
+    {"coord": [4, 7], "element": "PLANT"},
+    {"coord": [5, 7], "element": "PLANT"},
+    {"coord": [6, 7], "element": "PLANT"},
+    {"coord": [7, 7], "element": "PLANT"},
+    {"coord": [5, 8], "element": "PLANT"},
+    {"coord": [6, 8], "element": "PLANT"},
+
+    {"coord": [9, 8], "element": "PLANT"},
+    {"coord": [10, 8], "element": "PLANT"},
+    {"coord": [9, 9], "element": "PLANT"},
+    {"coord": [10, 9], "element": "PLANT"},
+    {"coord": [11, 9], "element": "PLANT"},
+
+    {"coord": [4, 0], "element": "PLANT"},
+    {"coord": [5, 0], "element": "PLANT"},
+    {"coord": [6, 0], "element": "PLANT"},
+
+    {"coord": [8, 10], "element": "PLANT"},
+    {"coord": [9, 10], "element": "PLANT"},
+    {"coord": [10, 10], "element": "PLANT"},
+
+    {"coord": [0, 0], "element": "ORE"},
+    {"coord": [11, 11], "element": "ORE"},
+    {"coord": [3, 10], "element": "STONE"},
+    {"coord": [8, 0], "element": "STONE"}
+  ]
+}
