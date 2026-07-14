@@ -154,7 +154,7 @@ func world_to_coord(wp: Vector2) -> Vector2i:
 		return Vector2i(-1, -1)
 	return Vector2i(x, y)
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if grid == null:
 		return
 	var coord = world_to_coord(get_global_mouse_position())
@@ -165,10 +165,8 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if coord.x >= 0:
 			cell_clicked.emit(coord)
-			get_viewport().set_input_as_handled()
 	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		# 右键撤回规则柱
 		if coord.x >= 0 and GameManager != null:
 			if GameManager.remove_pillar(coord):
 				select_card(-1)
-			get_viewport().set_input_as_handled()
