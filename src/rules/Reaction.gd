@@ -15,7 +15,7 @@ func _init(c: RuleCard = null, a: Vector2i = Vector2i.ZERO, t: Vector2i = Vector
 func apply(grid: Grid) -> void:
 	affected.clear()
 	var cell = grid.get_cell(target_coord)
-	if cell == null or card == null:
+	if cell == null or card == null or cell.has_state(State.FROZEN):
 		return
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:

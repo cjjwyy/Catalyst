@@ -298,6 +298,27 @@ func _world_rules() -> void:
 				dst_cell.element = Element.SPORE
 				dst_cell.placed_at_turn = turn
 
+	# 7. 降雪: 随机1-2格(无SNOW) +SNOW
+	var sn_cells: Array = []
+	for c in grid.all_cells():
+		if not c.has_state(State.SNOW):
+			sn_cells.append(c)
+	for _i in range(min(2, sn_cells.size())):
+		sn_cells.pop_at(randi() % sn_cells.size()).add_state(State.SNOW, 2)
+	# 8. 雪化冰: SNOW+水→冰
+	for c in grid.all_cells():
+		if c.has_state(State.SNOW) and c.element == Element.WATER:
+			c.element = Element.ICE
+			c.remove_state(State.SNOW)
+			c.placed_at_turn = turn
+	# 9. 雪融: SNOW邻熔岩/汽→消散
+	for c in grid.all_cells():
+		if c.has_state(State.SNOW):
+			for n in grid.neighbors(c.coord):
+				if n.element in [Element.LAVA, Element.STEAM]:
+					c.remove_state(State.SNOW)
+					break
+
 func decay_pillars() -> void:
 	for p in pillars:
 		p.life_remaining -= 1
