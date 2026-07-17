@@ -55,6 +55,14 @@ func start_game(level_idx: int = -1) -> void:
 	# 按关卡筛牌: level=0 全关通用, level=N 仅第N关出现
 	var lvl_idx = level_manager.current_level + 1
 	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_idx)
+	# steamify和grow各加2张额外副本,提高抽到概率
+	for c in all_card_defs:
+		if c.id == "steamify":
+			for _i in range(2):
+				all_card_defs.append(c)
+		if c.id == "grow":
+			for _i in range(2):
+				all_card_defs.append(c)
 	grid = _load_level(lvl.path)
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
