@@ -25,6 +25,10 @@ static func run_all() -> bool:
 	ok = ok and _test_spore_bloom()
 	ok = ok and _test_burning_ignite()
 	ok = ok and _test_spore_wind_move()
+	ok = ok and _test_freeze()
+	ok = ok and _test_melt()
+	ok = ok and _test_snow_to_ice()
+	ok = ok and _test_frozen_blocks()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -489,4 +493,77 @@ static func _test_spore_wind_move() -> bool:
 		g.get_cell(Vector2i(0,0)).element = Element.NONE
 	assert(g.get_cell(Vector2i(0,0)).element == Element.NONE, "spore off-edge should vanish")
 	print("test_spore_wind_move OK")
+	return true
+
+static func _test_freeze() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 2, 2, Element.ICE)
+	_put(g, 3, 2, Element.ICE)
+	var card = _make_card({
+		"id":"freeze","name":"结冰","kind":"MULTIPLY",
+		"trigger_element":"ICE","contact_element":"ICE",
+		"result_element":"ICE","radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	var ice_count = 0
+	for c in g.all_cells():
+		if c.element == Element.ICE:
+			ice_count += 1
+	assert(ice_count >= 3, "freeze should spread ICE to empty neighbors, got %d" % ice_count)
+	print("test_freeze OK (chain=%d, ice=%d)" % [chain, ice_count])
+	return true
+
+static func _test_melt() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 2, 2, Element.ICE)
+	_put(g, 3, 2, Element.STEAM)
+	var card = _make_card({
+		"id":"melt","name":"融冰","kind":"TRANSFORM",
+		"trigger_element":"ICE","contact_element":"STEAM",
+		"result_element":"WATER","self_replace":"NONE",
+		"radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(g.get_cell(Vector2i(2,2)).element == Element.WATER, "ICE should melt to WATER")
+	assert(g.get_cell(Vector2i(3,2)).element == Element.NONE, "STEAM should be consumed (self_replace=NONE)")
+	print("test_melt OK (chain=%d)" % chain)
+	return true
+
+static func _test_snow_to_ice() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 3, 3, Element.WATER)
+	g.get_cell(Vector2i(3,3)).add_state(State.SNOW, 2)
+	var c = g.get_cell(Vector2i(3,3))
+	assert(c.has_state(State.SNOW), "should have SNOW")
+	assert(c.element == Element.WATER, "should be WATER")
+	if c.has_state(State.SNOW) and c.element == Element.WATER:
+		c.element = Element.ICE
+		c.remove_state(State.SNOW)
+	assert(c.element == Element.ICE, "SNOW+WATER should become ICE")
+	assert(not c.has_state(State.SNOW), "SNOW should be removed")
+	print("test_snow_to_ice OK")
+	return true
+
+static func _test_frozen_blocks() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 2, 2, Element.ICE)
+	g.get_cell(Vector2i(2,2)).add_state(State.FROZEN, 3)
+	_put(g, 3, 2, Element.STEAM)
+	var card = _make_card({
+		"id":"melt","name":"融冰","kind":"TRANSFORM",
+		"trigger_element":"ICE","contact_element":"STEAM",
+		"result_element":"WATER","self_replace":"NONE",
+		"radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(g.get_cell(Vector2i(2,2)).element == Element.ICE, "FROZEN cell should block reaction")
+	assert(g.get_cell(Vector2i(3,2)).element == Element.STEAM, "STEAM untouched")
+	assert(chain == 0, "FROZEN block should yield 0 chain, got %d" % chain)
+	print("test_frozen_blocks OK (chain=%d)" % chain)
 	return true
