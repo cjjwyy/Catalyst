@@ -57,14 +57,17 @@ func _match_in_scope(grid: Grid, card: RuleCard, anchor: Vector2i, scope: Array)
 				out.append(Reaction.new(card, anchor, anchor))
 	return out
 
-func _match_cell(grid: Grid, card: RuleCard, c: Cell, scope: Array) -> bool:
+func _match_cell(grid: Grid, card: RuleCard, c: Cell, _scope: Array) -> bool:
 	if c.element != card.trigger_element:
 		return false
 	if card.trigger_state != State.NONE and not c.has_state(card.trigger_state):
 		return false
 	if card.contact_element != Element.NONE:
+		# scope1 = 触发格邻1格范围, 再由催化剂尘团块扩展
+		var scope1 = grid.cells_in_radius(c.coord, 1)
+		var expanded1 = _expand_scope_for_dust(grid, scope1)
 		var found = false
-		for n in scope:
+		for n in expanded1:
 			if n.coord == c.coord:
 				continue
 			if n.element == card.contact_element:

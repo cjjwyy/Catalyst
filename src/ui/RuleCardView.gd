@@ -59,24 +59,27 @@ func _tooltip() -> String:
 	if card == null: return ""
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			return "转化: 半径内 %s 接触到 %s → 全部变 %s\n寿命 %d 回合" % [
+			return "转化: 柱子的扫描范围(r%d)内,\n每格%s 若其邻1格有 %s → 变 %s\n寿命 %d 回合" % [
+				card.radius,
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
 				CN.get(card.result_element,"?"),
 				card.life]
 		RuleCard.Kind.MULTIPLY:
-			return "增殖: 半径内 %s 相邻 %s → 向空格扩散 %s\n寿命 %d 回合" % [
+			return "增殖: 柱子的扫描范围(r%d)内,\n每格%s 若其邻1格有 %s → 空格生 %s\n寿命 %d 回合" % [
+				card.radius,
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
 				CN.get(card.result_element,"?"),
 				card.life]
 		RuleCard.Kind.EXTINCTION:
-			var s = "灭绝: 半径内 %s ≥%d 个 → 清空所有 %s" % [
-				CN.get(card.trigger_element,"?"),
-				card.extinct_threshold,
-				CN.get(card.trigger_element,"?")]
+			var s = "灭绝: 柱子的扫描范围(r%d)内" % card.radius
+			s += "\n%s" % CN.get(card.trigger_element,"?")
+			if card.also_count != Element.NONE:
+				s += "+%s" % CN.get(card.also_count,"?")
+			s += " ≥%d 个 → 全部清空" % card.extinct_threshold
 			if card.also_clear != Element.NONE:
-				s += "\n同时清除范围内所有 %s" % CN.get(card.also_clear,"?")
+				s += "\n同时清除范围内 %s" % CN.get(card.also_clear,"?")
 			return s + "\n寿命 %d 回合" % card.life
 		_: return ""
 

@@ -259,16 +259,15 @@ static func _test_wind_push_dust() -> bool:
 	return true
 
 static func _test_dust_blob_extends_scope() -> bool:
-	# 3 格尘形成 4 连通团块: (2,2)(2,3)(3,3)
-	# pillar at (1,1) radius=2 touches (2,2) → blob expands to (2,3)(3,3)
+	# 验证: dust团块扩展scope1, 让隔两格的contact_element也能被找到
+	# STEAM(3,3) 距 PLANT(2,2) 曼哈顿=2, 不在正常scope1(曼哈顿1)内
+	# 但 (2,2)(2,3)(3,3) 尘连通成团 → scope1 扩展到包含(3,3)STEAM → 触发
 	var g = Grid.new(6, 6)
-	_put(g, 1, 1, Element.STEAM)
-	_put(g, 2, 2, Element.PLANT)
-	g.get_cell(Vector2i(2,2)).add_state(State.DUST, 3)
-	_put(g, 2, 3, Element.PLANT)
-	g.get_cell(Vector2i(2,3)).add_state(State.DUST, 3)
-	_put(g, 3, 3, Element.PLANT)
+	_put(g, 3, 3, Element.STEAM)     # contact, 有尘
 	g.get_cell(Vector2i(3,3)).add_state(State.DUST, 3)
+	_put(g, 2, 2, Element.PLANT)     # trigger, 有尘, 在pillar半径内
+	g.get_cell(Vector2i(2,2)).add_state(State.DUST, 3)
+	g.get_cell(Vector2i(2,3)).add_state(State.DUST, 3)  # 桥接尘, 连通团块
 	var card = _make_card({
 		"id":"grow","name":"grow","kind":"MULTIPLY",
 		"trigger_element":"PLANT","contact_element":"STEAM",
@@ -280,9 +279,7 @@ static func _test_dust_blob_extends_scope() -> bool:
 	var targets: Array = []
 	for r in out:
 		targets.append(r.target_coord)
-	assert(targets.has(Vector2i(2,2)), "should trigger plant at (2,2)")
-	assert(targets.has(Vector2i(2,3)), "should trigger plant at (2,3) via dust blob")
-	assert(targets.has(Vector2i(3,3)), "should trigger plant at (3,3) via dust blob")
+	assert(targets.has(Vector2i(2,2)), "should trigger plant at (2,2) via dust blob expansion")
 	print("test_dust_blob_extends_scope OK (%d reactions)" % out.size())
 	return true
 
