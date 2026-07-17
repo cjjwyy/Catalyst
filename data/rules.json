@@ -3,60 +3,60 @@
     "id": "steamify", "name": "蒸汽化", "kind": "TRANSFORM",
     "trigger_element": "WATER", "contact_element": "LAVA",
     "result_element": "STEAM", "self_replace": "STONE",
-    "radius": 2, "life": 4, "chain_reward": 1, "min_level": 1
+    "radius": 2, "life": 4, "chain_reward": 1
   },
   {
     "id": "grow", "name": "加速生长", "kind": "MULTIPLY",
     "trigger_element": "PLANT", "contact_element": "STEAM",
-    "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 1
+    "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1
   },
   {
     "id": "extinct", "name": "丛林灭绝", "kind": "EXTINCTION",
     "trigger_element": "PLANT", "result_element": "NONE",
     "radius": 2, "life": 4, "extinct_threshold": 5,
-    "also_count": "GRASS", "also_clear": "STEAM", "chain_reward": 1, "min_level": 1
+    "also_count": "GRASS", "also_clear": "STEAM", "chain_reward": 1
   },
   {
     "id": "petrify", "name": "岩化", "kind": "TRANSFORM",
     "trigger_element": "STONE", "contact_element": "PLANT",
     "result_element": "EARTH", "self_replace": "NONE",
-    "radius": 2, "life": 4, "chain_reward": 1, "min_level": 1
+    "radius": 2, "life": 4, "chain_reward": 1
   },
   {
     "id": "grass_grow", "name": "草生", "kind": "MULTIPLY",
     "trigger_element": "EARTH", "contact_element": "PLANT",
-    "result_element": "GRASS", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 1
+    "result_element": "GRASS", "radius": 2, "life": 4, "chain_reward": 1
   },
   {
     "id": "harvest", "name": "采掘", "kind": "TRANSFORM",
     "trigger_element": "PLANT", "contact_element": "ORE",
     "result_element": "NONE", "self_replace": "NONE",
-    "radius": 2, "life": 4, "chain_reward": 5, "min_level": 1
+    "radius": 2, "life": 4, "chain_reward": 5
   },
   {
     "id": "grass_spread", "name": "草殖", "kind": "MULTIPLY",
     "trigger_element": "GRASS", "contact_element": "GRASS",
-    "result_element": "GRASS", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 1
+    "result_element": "GRASS", "radius": 2, "life": 4, "chain_reward": 1
   },
   {
     "id": "sporify", "name": "结孢子", "kind": "MULTIPLY",
     "trigger_element": "STEAM", "contact_element": "PLANT",
-    "result_element": "SPORE", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 2
+    "result_element": "SPORE", "radius": 2, "life": 4, "chain_reward": 1, "level": 2
   },
   {
     "id": "spore_bloom", "name": "孢子萌发", "kind": "MULTIPLY",
     "trigger_element": "WATER", "contact_element": "SPORE",
-    "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 2
+    "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1, "level": 2
   },
   {
     "id": "freeze", "name": "结冰", "kind": "MULTIPLY",
     "trigger_element": "ICE", "contact_element": "ICE",
-    "result_element": "ICE", "radius": 2, "life": 4, "chain_reward": 1, "min_level": 3
+    "result_element": "ICE", "radius": 2, "life": 4, "chain_reward": 1, "level": 3
   },
   {
     "id": "melt", "name": "融冰", "kind": "TRANSFORM",
     "trigger_element": "ICE", "contact_element": "STEAM",
     "result_element": "WATER", "self_replace": "NONE",
-    "radius": 2, "life": 4, "chain_reward": 1, "min_level": 3
+    "radius": 2, "life": 4, "chain_reward": 1, "level": 3
   }
 ]

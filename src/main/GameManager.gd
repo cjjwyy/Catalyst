@@ -52,9 +52,9 @@ func start_game(level_idx: int = -1) -> void:
 	var lvl = level_manager.get_current()
 	target = int(lvl.target)
 	all_card_defs = _load_rules()
-	# 按关卡筛牌: min_level <= 当前关卡编号(1-based)
+	# 按关卡筛牌: level=0 全关通用, level=N 仅第N关出现
 	var lvl_idx = level_manager.current_level + 1
-	all_card_defs = all_card_defs.filter(func(c): return c.min_level <= lvl_idx)
+	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_idx)
 	grid = _load_level(lvl.path)
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
