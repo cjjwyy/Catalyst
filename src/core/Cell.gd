@@ -26,6 +26,8 @@ func tick_states() -> void:
 			to_remove.append(s)
 	for s in to_remove:
 		states.erase(s)
+		if s == State.BURNING:
+			was_burning = true
 
 func clear_states() -> void:
 	states.clear()

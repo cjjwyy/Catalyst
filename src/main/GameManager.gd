@@ -188,12 +188,17 @@ func push_dust() -> void:
 			if c.states.get(State.DUST, 0) > 1:
 				continue
 			var dst = c.coord
+			var fell_off = false
 			for _i in range(wind_speed):
 				var nx = dst + dir_vec
 				if not grid.is_in_bounds(nx):
-					break    # 反弹: 碰到边界停下来,不下桌
+					fell_off = true
+					break
 				dst = nx
-			moves.append([c.coord, dst])
+			if fell_off:
+				moves.append([c.coord, null])
+			else:
+				moves.append([c.coord, dst])
 	for m in moves:
 		var src = grid.get_cell(m[0])
 		var turns_left = src.states.get(State.DUST, 0)
@@ -255,6 +260,43 @@ func _world_rules() -> void:
 		var c = empty.pop_at(randi() % empty.size())
 		c.element = Element.WATER if randi() % 2 == 0 else Element.STONE
 		c.placed_at_turn = turn
+	# 4. 燃烧蔓延: 植物相邻熔岩→点燃; 燃烧蔓延相邻植物
+	for c in grid.all_cells():
+		if c.element == Element.PLANT and not c.has_state(State.BURNING):
+			for n in grid.neighbors(c.coord):
+				if n.element == Element.LAVA:
+					c.add_state(State.BURNING, 2)
+					break
+	for c in grid.all_cells():
+		if c.has_state(State.BURNING):
+			for n in grid.neighbors(c.coord):
+				if n.element == Element.PLANT and not n.has_state(State.BURNING):
+					n.add_state(State.BURNING, 2)
+	# 5. was_burning 检查: BURNING 衰减后植物烧完
+	for c in grid.all_cells():
+		if c.was_burning:
+			if c.element == Element.PLANT:
+				c.element = Element.NONE
+				c.placed_at_turn = turn
+			c.was_burning = false
+	# 6. 孢子飘散: 随风向移动 1 格, 越界消失
+	var spore_dir = DIR_VECTORS[wind_dir]
+	var spore_moves: Array = []
+	for c in grid.all_cells():
+		if c.element == Element.SPORE:
+			var nx = c.coord + spore_dir
+			if not grid.is_in_bounds(nx):
+				spore_moves.append([c.coord, null])
+			else:
+				spore_moves.append([c.coord, nx])
+	for m in spore_moves:
+		var src = grid.get_cell(m[0])
+		src.element = Element.NONE
+		if m[1] != null:
+			var dst_cell = grid.get_cell(m[1])
+			if dst_cell.element == Element.NONE:
+				dst_cell.element = Element.SPORE
+				dst_cell.placed_at_turn = turn
 
 func decay_pillars() -> void:
 	for p in pillars:
