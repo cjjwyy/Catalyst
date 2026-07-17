@@ -15,6 +15,7 @@ var COLORS = {
 	Element.PLANT: Color(0.3, 0.75, 0.3),
 	Element.ORE: Color(0.85, 0.7, 0.2),
 	Element.GRASS: Color(0.4, 0.9, 0.4),
+	Element.SPORE: Color(0.6, 0.8, 0.5),
 }
 
 const LABELS = {
@@ -27,6 +28,7 @@ const LABELS = {
 	Element.PLANT: "植",
 	Element.ORE: "矿",
 	Element.GRASS: "草",
+	Element.SPORE: "孢",
 }
 
 func _font() -> Font:

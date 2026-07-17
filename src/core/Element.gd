@@ -1,11 +1,12 @@
 class_name Element
 extends RefCounted
 
-enum { NONE, WATER, STONE, EARTH, STEAM, LAVA, PLANT, ORE, GRASS }
+enum { NONE, WATER, STONE, EARTH, STEAM, LAVA, PLANT, ORE, GRASS, SPORE }
 
 const NAMES = {
 	NONE: "NONE", WATER: "WATER", STONE: "STONE", EARTH: "EARTH",
-	STEAM: "STEAM", LAVA: "LAVA", PLANT: "PLANT", ORE: "ORE", GRASS: "GRASS"
+	STEAM: "STEAM", LAVA: "LAVA", PLANT: "PLANT", ORE: "ORE", GRASS: "GRASS",
+	SPORE: "SPORE"
 }
 
 static func from_string(s: String) -> int:
