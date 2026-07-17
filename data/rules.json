@@ -36,6 +36,16 @@
   {
     "id": "grass_spread", "name": "草殖", "kind": "MULTIPLY",
     "trigger_element": "GRASS", "contact_element": "GRASS",
-    "result_element": "GRASS", "radius": 2, "life": 4, "chain_reward": 1
+    "result_element": "GRASS", "radius": 2, "life": 4,     "chain_reward": 1
+  },
+  {
+    "id": "sporify", "name": "结孢子", "kind": "MULTIPLY",
+    "trigger_element": "STEAM", "contact_element": "PLANT",
+    "result_element": "SPORE", "radius": 2, "life": 4, "chain_reward": 1
+  },
+  {
+    "id": "spore_bloom", "name": "孢子萌发", "kind": "MULTIPLY",
+    "trigger_element": "WATER", "contact_element": "SPORE",
+    "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1
   }
 ]
