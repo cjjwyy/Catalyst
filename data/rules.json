@@ -47,5 +47,16 @@
     "id": "spore_bloom", "name": "孢子萌发", "kind": "MULTIPLY",
     "trigger_element": "WATER", "contact_element": "SPORE",
     "result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1
+  },
+  {
+    "id": "freeze", "name": "结冰", "kind": "MULTIPLY",
+    "trigger_element": "ICE", "contact_element": "ICE",
+    "result_element": "ICE", "radius": 2, "life": 4, "chain_reward": 1
+  },
+  {
+    "id": "melt", "name": "融冰", "kind": "TRANSFORM",
+    "trigger_element": "ICE", "contact_element": "STEAM",
+    "result_element": "WATER", "self_replace": "NONE",
+    "radius": 2, "life": 4, "chain_reward": 1
   }
 ]
