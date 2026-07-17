@@ -16,6 +16,7 @@ var COLORS = {
 	Element.ORE: Color(0.85, 0.7, 0.2),
 	Element.GRASS: Color(0.4, 0.9, 0.4),
 	Element.SPORE: Color(0.6, 0.8, 0.5),
+	Element.ICE: Color(0.7, 0.85, 0.95),
 }
 
 const LABELS = {
@@ -29,6 +30,7 @@ const LABELS = {
 	Element.ORE: "矿",
 	Element.GRASS: "草",
 	Element.SPORE: "孢",
+	Element.ICE: "冰",
 }
 
 func _font() -> Font:
@@ -85,6 +87,10 @@ func _draw() -> void:
 				draw_rect(rect.grow(-6), Color(0.9, 0.9, 1, 0.32), true)
 			if c.has_state(State.BURNING):
 				draw_rect(rect.grow(-6), Color(1, 0.3, 0, 0.32), true)
+			if c.has_state(State.SNOW):
+				draw_rect(rect.grow(-6), Color(1, 1, 1, 0.25), true)
+			if c.has_state(State.FROZEN):
+				draw_rect(rect.grow(-4), Color(0.4, 0.7, 0.95), false, 3)
 	if selected_card_idx >= 0 and hover_cell.x >= 0:
 		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)

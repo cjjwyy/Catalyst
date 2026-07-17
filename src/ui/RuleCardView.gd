@@ -20,7 +20,8 @@ const CN = {
 	Element.NONE: "空", Element.WATER: "水", Element.STONE: "岩",
 	Element.EARTH: "土", Element.STEAM: "汽", Element.LAVA: "熔", Element.PLANT: "植",
 	Element.ORE: "矿", Element.GRASS: "草",
-	Element.SPORE: "孢"
+	Element.SPORE: "孢",
+	Element.ICE: "冰"
 }
 
 func _label() -> String:

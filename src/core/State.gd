@@ -1,10 +1,10 @@
 class_name State
 extends RefCounted
 
-enum { NONE, BURNING, STEAMED, FROZEN, ASH, DUST }
+enum { NONE, BURNING, STEAMED, FROZEN, ASH, DUST, SNOW }
 
 const NAMES = {
-	NONE: "NONE", BURNING: "BURNING", STEAMED: "STEAMED", FROZEN: "FROZEN", ASH: "ASH", DUST: "DUST"
+	NONE: "NONE", BURNING: "BURNING", STEAMED: "STEAMED", FROZEN: "FROZEN", ASH: "ASH", DUST: "DUST", SNOW: "SNOW"
 }
 
 static func from_string(s: String) -> int:
