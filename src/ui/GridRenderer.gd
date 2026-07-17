@@ -50,7 +50,7 @@ func set_grid(g) -> void:
 	# 动态计算 cell_size: 适配窗口, 最大 64px
 	var avail_w = 1500 - int(GRID_OFFSET.x) - 220   # 右侧留 220 给图例
 	var avail_h = 1000 - int(GRID_OFFSET.y) - 120   # 下方留 120 给手牌
-	cell_size = min(MAX_cell_size, avail_w / grid.w, avail_h / grid.h)
+	cell_size = min(MAX_CELL_SIZE, avail_w / grid.w, avail_h / grid.h)
 	queue_redraw()
 
 func select_card(idx: int) -> void:
