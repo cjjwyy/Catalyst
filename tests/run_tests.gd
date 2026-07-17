@@ -21,6 +21,10 @@ static func run_all() -> bool:
 	ok = ok and _test_extinct_counts_grass()
 	ok = ok and _test_level_manager()
 	ok = ok and _test_level_load()
+	ok = ok and _test_sporify()
+	ok = ok and _test_spore_bloom()
+	ok = ok and _test_burning_ignite()
+	ok = ok and _test_spore_wind_move()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -393,4 +397,96 @@ static func _test_level_load() -> bool:
 		assert(int(data.size[0]) == lvl.size[0], "level %d size mismatch" % i)
 		assert(int(data.target) == lvl.target, "level %d target mismatch" % i)
 	print("test_level_load OK (4 levels verified)")
+	return true
+
+static func _test_sporify() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.STEAM)
+	_put(g, 2, 1, Element.PLANT)
+	_put(g, 0, 1, Element.NONE)
+	var card = _make_card({
+		"id":"sporify","name":"结孢子","kind":"MULTIPLY",
+		"trigger_element":"STEAM","contact_element":"PLANT",
+		"result_element":"SPORE","radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(1,1), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(g.get_cell(Vector2i(1,1)).element == Element.STEAM, "steam kept")
+	assert(g.get_cell(Vector2i(2,1)).element == Element.PLANT, "plant kept")
+	var spore_count = 0
+	for c in g.all_cells():
+		if c.element == Element.SPORE:
+			spore_count += 1
+	assert(spore_count >= 1, "should produce >=1 spore, got %d" % spore_count)
+	print("test_sporify OK (chain=%d, spores=%d)" % [chain, spore_count])
+	return true
+
+static func _test_spore_bloom() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.WATER)
+	_put(g, 2, 1, Element.SPORE)
+	_put(g, 0, 1, Element.NONE)
+	var card = _make_card({
+		"id":"spore_bloom","name":"孢子萌发","kind":"MULTIPLY",
+		"trigger_element":"WATER","contact_element":"SPORE",
+		"result_element":"PLANT","radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(1,1), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(g.get_cell(Vector2i(1,1)).element == Element.WATER, "water kept")
+	assert(g.get_cell(Vector2i(2,1)).element == Element.SPORE, "spore kept")
+	var plant_count = 0
+	for c in g.all_cells():
+		if c.element == Element.PLANT:
+			plant_count += 1
+	assert(plant_count >= 1, "should produce >=1 plant, got %d" % plant_count)
+	print("test_spore_bloom OK (chain=%d, plants=%d)" % [chain, plant_count])
+	return true
+
+static func _test_burning_ignite() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.PLANT)
+	_put(g, 2, 1, Element.LAVA)
+	var c = g.get_cell(Vector2i(1,1))
+	for n in g.neighbors(c.coord):
+		if n.element == Element.LAVA:
+			c.add_state(State.BURNING, 2)
+			break
+	assert(c.has_state(State.BURNING), "plant should ignite near lava")
+	_put(g, 0, 1, Element.PLANT)
+	for n in g.neighbors(c.coord):
+		if n.element == Element.PLANT and not n.has_state(State.BURNING):
+			n.add_state(State.BURNING, 2)
+	assert(g.get_cell(Vector2i(0,1)).has_state(State.BURNING), "fire should spread")
+	print("test_burning_ignite OK")
+	return true
+
+static func _test_spore_wind_move() -> bool:
+	var g = Grid.new(6, 6)
+	g.get_cell(Vector2i(2, 3)).element = Element.SPORE
+	var dir = Vector2i(0, -1)
+	var nx = Vector2i(2, 3) + dir
+	var fell = false
+	if not g.is_in_bounds(nx):
+		fell = true
+	if fell:
+		g.get_cell(Vector2i(2,3)).element = Element.NONE
+	else:
+		g.get_cell(Vector2i(2,3)).element = Element.NONE
+		var dst = g.get_cell(nx)
+		if dst.element == Element.NONE:
+			dst.element = Element.SPORE
+	assert(g.get_cell(Vector2i(2,2)).element == Element.SPORE, "spore should move to (2,2)")
+	assert(g.get_cell(Vector2i(2,3)).element == Element.NONE, "old cell cleared")
+	g.get_cell(Vector2i(0,0)).element = Element.SPORE
+	nx = Vector2i(0,0) + dir
+	fell = false
+	if not g.is_in_bounds(nx):
+		fell = true
+	if fell:
+		g.get_cell(Vector2i(0,0)).element = Element.NONE
+	assert(g.get_cell(Vector2i(0,0)).element == Element.NONE, "spore off-edge should vanish")
+	print("test_spore_wind_move OK")
 	return true
