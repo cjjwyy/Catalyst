@@ -329,6 +329,35 @@ func _world_rules() -> void:
 				if n.element in [Element.LAVA, Element.STEAM]:
 					c.remove_state(State.SNOW)
 					break
+	# 天灾事件 (仅第4关)
+	if level_manager.current_level == 3:
+		if randi() % 100 < 30:
+			var event = randi() % 3
+			if event == 0:  # 陨石
+				var cells = grid.all_cells()
+				var c = cells[randi() % cells.size()]
+				c.element = Element.LAVA
+				c.add_state(State.METEOR_LAVA, 2)
+				c.placed_at_turn = turn
+			elif event == 1:  # 地震
+				var non_empty = grid.all_cells().filter(func(c2): return c2.element != Element.NONE)
+				for _i in range(min(2, non_empty.size())):
+					var sc = non_empty.pop_at(randi() % non_empty.size())
+					sc.element = Element.NONE
+					sc.clear_states()
+			else:  # 火山喷发
+				var empties = grid.all_cells().filter(func(c2): return c2.element == Element.NONE)
+				if not empties.is_empty():
+					var c = empties[randi() % empties.size()]
+					c.element = Element.LAVA
+					c.placed_at_turn = turn
+	# METEOR_LAVA 衰减→熔岩变岩石
+	for c in grid.all_cells():
+		if c.was_meteor:
+			if c.element == Element.LAVA:
+				c.element = Element.STONE
+				c.placed_at_turn = turn
+			c.was_meteor = false
 
 func decay_pillars() -> void:
 	for p in pillars:
