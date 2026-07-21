@@ -8,6 +8,7 @@ var coord: Vector2i = Vector2i.ZERO
 var placed_at_turn: int = 0   # 用于 EXTINCTION "最旧" 判定
 var decay_timer: int = 0   # 草连续无邻树回合计数
 var was_burning: bool = false   # BURNING 衰减后标记, 供 _world_rules 检查
+var was_meteor: bool = false   # METEOR_LAVA 衰减后标记
 var frozen_original: int = Element.NONE   # FROZEN 前的原元素
 
 func has_state(s: int) -> bool:
@@ -29,6 +30,8 @@ func tick_states() -> void:
 		states.erase(s)
 		if s == State.BURNING:
 			was_burning = true
+		if s == State.METEOR_LAVA:
+			was_meteor = true
 
 func clear_states() -> void:
 	states.clear()

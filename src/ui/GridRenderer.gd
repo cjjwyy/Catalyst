@@ -91,6 +91,14 @@ func _draw() -> void:
 				draw_rect(rect.grow(-6), Color(1, 1, 1, 0.25), true)
 			if c.has_state(State.FROZEN):
 				draw_rect(rect.grow(-4), Color(0.4, 0.7, 0.95), false, 3)
+			if c.has_state(State.BLESSED):
+				draw_rect(rect.grow(-3), Color(1, 0.85, 0.3), false, 2)
+			if c.has_state(State.METEOR_LAVA):
+				var cx = rect.position.x + cell_size / 2.0
+				var cy = rect.position.y + cell_size / 2.0
+				var mr = 8.0 + 3.0 * sin(Time.get_ticks_msec() / 200.0)
+				draw_circle(Vector2(cx, cy), mr, Color(0.5, 0.15, 0.1, 0.5))
+				draw_string(_font(), rect.position + Vector2(cell_size / 2.0 - 4, 14), "^", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1, 0.4, 0.2))
 	if selected_card_idx >= 0 and hover_cell.x >= 0:
 		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)
