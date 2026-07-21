@@ -38,7 +38,13 @@ func execute(grid: Grid, pillars: Array) -> int:
 			if r.affected.size() > 0:
 				for c in r.affected:
 					new_changed.append(c)
-				chain += r.card.chain_reward if r.card != null else 1
+				var reward = r.card.chain_reward if r.card != null else 1
+				for coord in r.affected:
+					var bc = grid.get_cell(coord)
+					if bc != null and bc.has_state(State.BLESSED):
+						reward *= 2
+						break
+				chain += reward
 				reaction_applied.emit(r)
 				any_effect = true
 		if not any_effect:
@@ -83,7 +89,13 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 			if r.affected.size() > 0:
 				for c in r.affected:
 					new_changed.append(c)
-				chain += r.card.chain_reward if r.card != null else 1
+				var reward = r.card.chain_reward if r.card != null else 1
+				for coord in r.affected:
+					var bc = grid.get_cell(coord)
+					if bc != null and bc.has_state(State.BLESSED):
+						reward *= 2
+						break
+				chain += reward
 				reaction_applied.emit(r)
 				any_effect = true
 				await Engine.get_main_loop().process_frame
