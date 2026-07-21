@@ -58,5 +58,18 @@
     "trigger_element": "ICE", "contact_element": "STEAM",
     "result_element": "WATER", "self_replace": "NONE",
     "radius": 2, "life": 4, "chain_reward": 1, "level": 3
+  },
+  {
+    "id": "bless", "name": "祝福", "kind": "TRANSFORM",
+    "trigger_element": "STEAM", "contact_element": "PLANT",
+    "result_element": "NONE", "self_replace": "NONE",
+    "add_state": "BLESSED", "add_state_turns": 3,
+    "radius": 2, "life": 4, "chain_reward": 1, "level": 4
+  },
+  {
+    "id": "meteor_strike", "name": "陨石术", "kind": "EXTINCTION",
+    "trigger_element": "LAVA", "result_element": "NONE",
+    "radius": 2, "life": 4, "extinct_threshold": 3,
+    "also_clear": "PLANT", "chain_reward": 1, "level": 4
   }
 ]
