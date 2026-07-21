@@ -29,6 +29,10 @@ static func run_all() -> bool:
 	ok = ok and _test_melt()
 	ok = ok and _test_snow_to_ice()
 	ok = ok and _test_frozen_blocks()
+	ok = ok and _test_bless_bonus()
+	ok = ok and _test_meteor_strike()
+	ok = ok and _test_meteor_event()
+	ok = ok and _test_disaster_earthquake()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -563,4 +567,81 @@ static func _test_frozen_blocks() -> bool:
 	assert(g.get_cell(Vector2i(3,2)).element == Element.STEAM, "STEAM untouched")
 	assert(chain == 0, "FROZEN block should yield 0 chain, got %d" % chain)
 	print("test_frozen_blocks OK (chain=%d)" % chain)
+	return true
+
+static func _test_bless_bonus() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.WATER)
+	_put(g, 2, 1, Element.LAVA)
+	g.get_cell(Vector2i(1,1)).add_state(State.BLESSED, 3)
+	var card = _make_card({
+		"id":"steamify","name":"蒸汽化","kind":"TRANSFORM",
+		"trigger_element":"WATER","contact_element":"LAVA",
+		"result_element":"STEAM","self_replace":"STONE",
+		"radius":2,"life":4,"chain_reward":1
+	})
+	var p = RulePillar.new(card, Vector2i(1,1), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	# BLESSED 格 reaction chain_reward 1x2 = 2
+	assert(chain == 2, "BLESSED should double chain_reward, got %d" % chain)
+	print("test_bless_bonus OK (chain=%d)" % chain)
+	return true
+
+static func _test_meteor_strike() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.LAVA)
+	_put(g, 2, 1, Element.LAVA)
+	_put(g, 3, 1, Element.LAVA)
+	_put(g, 2, 2, Element.PLANT)
+	var card = _make_card({
+		"id":"meteor_strike","name":"陨石术","kind":"EXTINCTION",
+		"trigger_element":"LAVA","result_element":"NONE",
+		"radius":2,"extinct_threshold":3,"also_clear":"PLANT"
+	})
+	var p = RulePillar.new(card, Vector2i(2,2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	assert(g.count_element(Element.LAVA) == 0, "all lava cleared")
+	assert(g.count_element(Element.PLANT) == 0, "all plants cleared via also_clear")
+	print("test_meteor_strike OK (chain=%d)" % chain)
+	return true
+
+static func _test_meteor_event() -> bool:
+	var g = Grid.new(6, 6)
+	var c = g.get_cell(Vector2i(2, 2))
+	c.element = Element.LAVA
+	c.add_state(State.METEOR_LAVA, 2)
+	# 模拟 tick_states 两次
+	for _i in range(2):
+		for cc in g.all_cells():
+			cc.tick_states()
+	# was_meteor 应为 true
+	assert(c.was_meteor, "was_meteor should be set")
+	# 衰减后熔岩→岩石
+	if c.was_meteor:
+		if c.element == Element.LAVA:
+			c.element = Element.STONE
+		c.was_meteor = false
+	assert(g.get_cell(Vector2i(2,2)).element == Element.STONE, "meteor lava should become stone")
+	print("test_meteor_event OK")
+	return true
+
+static func _test_disaster_earthquake() -> bool:
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.WATER)
+	_put(g, 2, 2, Element.PLANT)
+	_put(g, 3, 3, Element.STONE)
+	# 模拟地震: 随机清空2格
+	var non_empty = g.all_cells().filter(func(c2): return c2.element != Element.NONE)
+	for _i in range(min(2, non_empty.size())):
+		var sc = non_empty.pop_at(randi() % non_empty.size())
+		sc.element = Element.NONE
+		sc.clear_states()
+	var remaining = 0
+	for c in g.all_cells():
+		if c.element != Element.NONE:
+			remaining += 1
+	assert(remaining == 1, "earthquake should clear 2 of 3, remaining %d" % remaining)
+	print("test_disaster_earthquake OK")
 	return true

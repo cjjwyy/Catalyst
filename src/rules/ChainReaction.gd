@@ -25,6 +25,10 @@ func execute(grid: Grid, pillars: Array) -> int:
 		var new_changed: Array = []
 		var any_effect = false
 		for r in reactions:
+			var blessed_before: Dictionary = {}
+			for cc in grid.all_cells():
+				if cc.has_state(State.BLESSED):
+					blessed_before[cc.coord] = true
 			r.apply(grid)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				var empty_dust_cells: Array = []
@@ -40,8 +44,7 @@ func execute(grid: Grid, pillars: Array) -> int:
 					new_changed.append(c)
 				var reward = r.card.chain_reward if r.card != null else 1
 				for coord in r.affected:
-					var bc = grid.get_cell(coord)
-					if bc != null and bc.has_state(State.BLESSED):
+					if blessed_before.has(coord):
 						reward *= 2
 						break
 				chain += reward
@@ -76,6 +79,10 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 		var new_changed: Array = []
 		var any_effect = false
 		for r in reactions:
+			var blessed_before: Dictionary = {}
+			for cc in grid.all_cells():
+				if cc.has_state(State.BLESSED):
+					blessed_before[cc.coord] = true
 			r.apply(grid)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				var empty_dust_cells: Array = []
@@ -91,8 +98,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 					new_changed.append(c)
 				var reward = r.card.chain_reward if r.card != null else 1
 				for coord in r.affected:
-					var bc = grid.get_cell(coord)
-					if bc != null and bc.has_state(State.BLESSED):
+					if blessed_before.has(coord):
 						reward *= 2
 						break
 				chain += reward
