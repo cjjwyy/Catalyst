@@ -41,10 +41,10 @@ signal level_complete(level_idx: int)
 
 func _ready() -> void:
 	Engine.get_main_loop().set_auto_accept_quit(true)
-	# ponytail: 启动时跑自检,失败立即报错
 	if not TestsScript.run_all():
 		push_error("Catalyst 自检失败")
-	start_game()
+	# DEBUG: skip start_game
+	# start_game()
 
 func start_game(level_idx: int = -1) -> void:
 	if level_idx >= 0:
