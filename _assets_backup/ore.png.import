@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://8fu63tf7vy3e"
-path="res://.godot/imported/overlay_snow.png-a8b8cacb97a9dc3ecb10ec21d5b03e4f.ctex"
+uid="uid://bwnx2nk4lhqti"
+path="res://.godot/imported/ore.png-03bab606e082ab1f861865464fb74a32.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/overlay_snow.png"
-dest_files=["res://.godot/imported/overlay_snow.png-a8b8cacb97a9dc3ecb10ec21d5b03e4f.ctex"]
+source_file="res://_assets_backup/ore.png"
+dest_files=["res://.godot/imported/ore.png-03bab606e082ab1f861865464fb74a32.ctex"]
 
 [params]
 

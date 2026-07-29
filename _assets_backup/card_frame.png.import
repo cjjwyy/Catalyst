@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://g10uukdmkfcj"
-path="res://.godot/imported/ice.png-4af9d1ecfd4b235262be9aa2c329d2ef.ctex"
+uid="uid://cm7ldbexvmv3r"
+path="res://.godot/imported/card_frame.png-9027d7aae0364557a412e7fea13a807b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ice.png"
-dest_files=["res://.godot/imported/ice.png-4af9d1ecfd4b235262be9aa2c329d2ef.ctex"]
+source_file="res://_assets_backup/card_frame.png"
+dest_files=["res://.godot/imported/card_frame.png-9027d7aae0364557a412e7fea13a807b.ctex"]
 
 [params]
 

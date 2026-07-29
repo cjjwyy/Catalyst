@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c432tpn3j5ei4"
-path="res://.godot/imported/overlay_meteor.png-6c82290360842ba1fc592445cf96587a.ctex"
+path="res://.godot/imported/overlay_meteor.png-39dae1a9c4b38ae51ec2f89787a5e9d5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/overlay_meteor.png"
-dest_files=["res://.godot/imported/overlay_meteor.png-6c82290360842ba1fc592445cf96587a.ctex"]
+source_file="res://_assets_backup/overlay_meteor.png"
+dest_files=["res://.godot/imported/overlay_meteor.png-39dae1a9c4b38ae51ec2f89787a5e9d5.ctex"]
 
 [params]
 

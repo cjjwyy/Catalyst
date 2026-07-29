@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwnx2nk4lhqti"
-path="res://.godot/imported/ore.png-a76f2c8dee454d04cc44963b90c5a0ec.ctex"
+uid="uid://b3245yhsli2ba"
+path="res://.godot/imported/earth.png-70f7d04774f90ff627cf940f6cbc0236.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ore.png"
-dest_files=["res://.godot/imported/ore.png-a76f2c8dee454d04cc44963b90c5a0ec.ctex"]
+source_file="res://_assets_backup/earth.png"
+dest_files=["res://.godot/imported/earth.png-70f7d04774f90ff627cf940f6cbc0236.ctex"]
 
 [params]
 

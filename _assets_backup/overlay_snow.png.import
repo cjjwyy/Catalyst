@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwagee22st2w7"
-path="res://.godot/imported/empty.png-1e851a975777dde31edcbb8a27ac110b.ctex"
+uid="uid://8fu63tf7vy3e"
+path="res://.godot/imported/overlay_snow.png-b5b36fe72e57e260bc5d296c57ece2c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/empty.png"
-dest_files=["res://.godot/imported/empty.png-1e851a975777dde31edcbb8a27ac110b.ctex"]
+source_file="res://_assets_backup/overlay_snow.png"
+dest_files=["res://.godot/imported/overlay_snow.png-b5b36fe72e57e260bc5d296c57ece2c2.ctex"]
 
 [params]
 
