@@ -13,4 +13,5 @@ offset_right = 1500.0
 offset_bottom = 1000.0
 mouse_filter = 2
 stretch_mode = 1
+expand_mode = 1
 texture = ExtResource("2_bg")
