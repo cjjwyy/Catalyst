@@ -51,20 +51,10 @@ var COLORS = {
 }
 
 func _ready() -> void:
-	_load_textures()
-
-func _ready() -> void:
-	call_deferred("_load_textures")
+	pass  # ponytail: 贴图加载暂时禁用以排查冻结问题
 
 func _load_textures() -> void:
-	for elem in ELEMENT_PATHS.keys():
-		tex_elements[elem] = load(ELEMENT_PATHS[elem])
-	tex_pillar = load("res://assets/pillar.png")
-	tex_dust = load("res://assets/dust.png")
-	for state in OVERLAY_PATHS.keys():
-		tex_overlays[state] = load(OVERLAY_PATHS[state])
-	if grid != null:
-		queue_redraw()
+	pass  # 暂时不用贴图,用色块渲染
 
 func _font() -> Font:
 	return ThemeDB.fallback_font

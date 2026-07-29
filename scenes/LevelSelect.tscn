@@ -1,15 +1,14 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://src/ui/LevelSelect.gd" id="1_ls"]
-[ext_resource type="Texture2D" path="res://assets/level_select_bg.png" id="2_bg"]
 
 [node name="LevelSelect" type="Control"]
 offset_right = 1500.0
 offset_bottom = 1000.0
 script = ExtResource("1_ls")
 
-[node name="BG" type="TextureRect" parent="."]
+[node name="BG" type="ColorRect" parent="."]
 offset_right = 1500.0
 offset_bottom = 1000.0
 mouse_filter = 2
-texture = ExtResource("2_bg")
+color = Color(0.02, 0.02, 0.04, 1)
