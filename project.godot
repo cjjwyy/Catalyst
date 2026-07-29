@@ -13,11 +13,7 @@ config_version=5
 config/name="Catalyst"
 run/main_scene="res://scenes/test_minimal.tscn"
 
-[autoload]
-
-GameManager="*res://src/main/GameManager.gd"
-
 [display]
 
-window/size/viewport_width=1280
-window/size/viewport_height=850
+window/size/viewport_width=800
+window/size/viewport_height=600
