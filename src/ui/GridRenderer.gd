@@ -88,8 +88,8 @@ signal cell_right_clicked(coord: Vector2i)
 func set_grid(g) -> void:
 	grid = g
 	# 动态计算 cell_size: 适配窗口, 最大 64px
-	var avail_w = 1280 - int(GRID_OFFSET.x) - 220
-	var avail_h = 850 - int(GRID_OFFSET.y) - 120
+	var avail_w = 1500 - int(GRID_OFFSET.x) - 220
+	var avail_h = 1000 - int(GRID_OFFSET.y) - 120
 	cell_size = min(MAX_CELL_SIZE, avail_w / grid.w, avail_h / grid.h)
 	queue_redraw()
 
