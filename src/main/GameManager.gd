@@ -116,6 +116,11 @@ func _load_level(path: String) -> Grid:
 func can_play_card() -> bool:
 	return not game_ended and phase == Phase.LAYOUT and energy.can_play() and hand.hand_size() > 0
 
+func get_hand_card(idx: int) -> RuleCard:
+	if idx < 0 or idx >= hand.hand_size():
+		return null
+	return hand.hand[idx]
+
 func play_card(hand_idx: int, coord: Vector2i) -> bool:
 	if not can_play_card():
 		return false

@@ -31,31 +31,35 @@ text = "?"
 
 [node name="HelpPanel" type="TextureRect" parent="."]
 visible = false
-offset_left = 450.0
-offset_top = 200.0
-offset_right = 1050.0
-offset_bottom = 600.0
+offset_left = 400.0
+offset_top = 100.0
+offset_right = 1100.0
+offset_bottom = 750.0
 mouse_filter = 2
 texture = ExtResource("5_helpbg")
 
 [node name="HelpLabel" type="Label" parent="HelpPanel"]
 offset_left = 16.0
 offset_top = 8.0
-offset_right = 584.0
-offset_bottom = 400.0
-theme_override_font_sizes/font = 13
-text = "目标: 累计连锁达 100 即胜利 | 连续 10 回合无连锁则失败
+offset_right = 684.0
+offset_bottom = 650.0
+theme_override_font_sizes/font = 12
+text = "新手入门:
+· 核心目标: 利用各种规则卡牌形成连锁反应，单次演化累计达到关卡目标连锁数后即可进入下一关
+· 游戏内存在不同的规则卡牌，其效果均可于其卡牌上直接阅读
+· 每回合游戏玩家均有一定的手牌和能量，消耗能量即可打出卡牌，当玩家能量耗尽或点击「执行演化」后，回合开始演化，所有打出卡牌对场上元素进行规则交互
+· 需要注意，演化过程中若有水靠近熔岩并产生蒸汽，则蒸汽也会和植物发生反应，需谨慎布局和细心观察才能得到最好的结果哦
+· 游玩小提示: 当选中手牌后，悬停在网格上会显示规则柱落址范围; 右键可以撤回放错位置的规则柱
+操作:
+1. 左键手牌 → 选中 | 左键网格 → 落柱(耗1能)
+2. 右键规则柱 → 撤回(退能) | 执行演化 → 看连锁
+3. 每回合抽3牌、回能至3
 
 机制:
 · 柱子扫描其半径(r)范围内每格
 · 触发格范围内有接触元素 → 反应触发
 · 催化剂尘可将多个尘格连成团块, 扩展范围
 · 灭绝直接统计柱子半径内目标数量, ≥阈值清空
-
-操作:
-1. 左键手牌 → 选中 | 左键网格 → 落柱(耗1能)
-2. 右键规则柱 → 撤回(退能) | 执行演化 → 看连锁
-3. 每回合抽3牌、回能至3
 
 元素: 水·岩·土·汽·熔·植·矿·草·孢·冰
 规则柱: 像素石碑, 左上数字 = 剩余回合

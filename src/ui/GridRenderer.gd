@@ -79,6 +79,7 @@ func _font() -> Font:
 var GameManager: Node = null
 var grid: Grid = null
 var selected_card_idx: int = -1
+var selected_card_radius: int = 1
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var flash_cells: Dictionary = {}  # coord -> flash_start_ms
 
@@ -95,6 +96,10 @@ func set_grid(g) -> void:
 
 func select_card(idx: int) -> void:
 	selected_card_idx = idx
+	if idx >= 0 and GameManager != null and GameManager.has_method("get_hand_card"):
+		selected_card_radius = GameManager.get_hand_card(idx).radius
+	else:
+		selected_card_radius = 1
 	queue_redraw()
 
 func on_flash(coord: Vector2i) -> void:
@@ -162,6 +167,11 @@ func _draw() -> void:
 					var ll = cell_size / 2.0 - 4
 					draw_string(_font(), rect.position + Vector2(ll, 14), "^", HORIZONTAL_ALIGNMENT_CENTER, -1, 14, Color(1, 0.4, 0.2))
 	if selected_card_idx >= 0 and hover_cell.x >= 0:
+		# 范围预览: 亮黄半透明覆盖 selected_card_radius 内所有格
+		for rc in grid.cells_in_radius(hover_cell, selected_card_radius):
+			var rr = Rect2(GRID_OFFSET + Vector2(rc.coord.x, rc.coord.y) * cell_size, Vector2(cell_size, cell_size))
+			draw_rect(rr, Color(1, 1, 0.3, 0.25), true)
+			draw_rect(rr, Color(1, 1, 0.5), false, 2)
 		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)
 	# 链式反馈: 闪烁白块
