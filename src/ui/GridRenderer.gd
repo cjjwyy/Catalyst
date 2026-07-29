@@ -55,15 +55,19 @@ func _ready() -> void:
 
 func _load_textures() -> void:
 	for elem in ELEMENT_PATHS.keys():
-		var t = load(ELEMENT_PATHS[elem])
-		if t != null:
-			tex_elements[elem] = t
-	tex_pillar = load("res://assets/pillar.png")
-	tex_dust = load("res://assets/dust.png")
+		tex_elements[elem] = _load_resized(ELEMENT_PATHS[elem], 128)
+	tex_pillar = _load_resized("res://assets/pillar.png", 128)
+	tex_dust = _load_resized("res://assets/dust.png", 64)
 	for state in OVERLAY_PATHS.keys():
-		var t = load(OVERLAY_PATHS[state])
-		if t != null:
-			tex_overlays[state] = t
+		tex_overlays[state] = _load_resized(OVERLAY_PATHS[state], 64)
+
+func _load_resized(path: String, sz: int) -> Texture2D:
+	var img = Image.new()
+	var err = img.load(path.replace("res://", ""))
+	if err != OK:
+		return null
+	img.resize(sz, sz, Image.INTERPOLATE_NEAREST)
+	return ImageTexture.create_from_image(img)
 
 func _font() -> Font:
 	return ThemeDB.fallback_font
