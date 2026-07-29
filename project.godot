@@ -22,7 +22,3 @@ GameManager="*res://src/main/GameManager.gd"
 
 window/size/viewport_width=1500
 window/size/viewport_height=1000
-
-[rendering]
-
-renderer/rendering_method="forward_plus"
