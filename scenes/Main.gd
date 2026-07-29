@@ -9,8 +9,8 @@ var status_label: Label
 var hand_container: HBoxContainer
 var execute_button: Button
 var help_button: Button
-var help_panel: ColorRect
-var gameover_panel: ColorRect
+var help_panel: TextureRect
+var gameover_panel: TextureRect
 var gameover_label: Label
 var next_button: Button
 var retry_button: Button
