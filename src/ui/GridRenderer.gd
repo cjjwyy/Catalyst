@@ -53,22 +53,18 @@ var COLORS = {
 func _ready() -> void:
 	_load_textures()
 
+func _ready() -> void:
+	call_deferred("_load_textures")
+
 func _load_textures() -> void:
 	for elem in ELEMENT_PATHS.keys():
-		tex_elements[elem] = _load_resized(ELEMENT_PATHS[elem], 128)
-	tex_pillar = _load_resized("res://assets/pillar.png", 128)
-	tex_dust = _load_resized("res://assets/dust.png", 64)
+		tex_elements[elem] = load(ELEMENT_PATHS[elem])
+	tex_pillar = load("res://assets/pillar.png")
+	tex_dust = load("res://assets/dust.png")
 	for state in OVERLAY_PATHS.keys():
-		tex_overlays[state] = _load_resized(OVERLAY_PATHS[state], 64)
-
-func _load_resized(path: String, sz: int) -> Texture2D:
-	var full = ProjectSettings.globalize_path(path)
-	var img = Image.new()
-	var err = img.load(full)
-	if err != OK:
-		return null
-	img.resize(sz, sz, Image.INTERPOLATE_NEAREST)
-	return ImageTexture.create_from_image(img)
+		tex_overlays[state] = load(OVERLAY_PATHS[state])
+	if grid != null:
+		queue_redraw()
 
 func _font() -> Font:
 	return ThemeDB.fallback_font
