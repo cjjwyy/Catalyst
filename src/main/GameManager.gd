@@ -53,7 +53,7 @@ func start_game(level_idx: int = -1) -> void:
 	all_card_defs = _load_rules()
 	var lvl_idx = level_manager.current_level + 1
 	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_idx)
-	# DEBUG: skip card copy loop and rest
+	# DEBUG: skip card copy loop
 	# for c in all_card_defs:
 	# 	if c.id == "steamify":
 	# 		for _i in range(2):
@@ -61,17 +61,17 @@ func start_game(level_idx: int = -1) -> void:
 	# 	if c.id == "grow":
 	# 		for _i in range(2):
 	# 			all_card_defs.append(c)
-	# grid = _load_level(lvl.path)
-	# hand = HandManager.new()
-	# hand.fill_draw_pile(all_card_defs)
-	# hand.refill_to(5)
-	# energy = EnergySystem.new(3)
-	# chain_total = 0
-	# dead_turns = 0
-	# game_ended = false
-	# phase = Phase.LAYOUT
-	# _reroll_wind()
-	# state_changed.emit()
+	grid = _load_level(lvl.path)
+	hand = HandManager.new()
+	hand.fill_draw_pile(all_card_defs)
+	hand.refill_to(5)
+	energy = EnergySystem.new(3)
+	chain_total = 0
+	dead_turns = 0
+	game_ended = false
+	phase = Phase.LAYOUT
+	_reroll_wind()
+	state_changed.emit()
 
 func _load_rules() -> Array:
 	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
