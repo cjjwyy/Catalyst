@@ -62,8 +62,9 @@ func _load_textures() -> void:
 		tex_overlays[state] = _load_resized(OVERLAY_PATHS[state], 64)
 
 func _load_resized(path: String, sz: int) -> Texture2D:
+	var full = ProjectSettings.globalize_path(path)
 	var img = Image.new()
-	var err = img.load(path.replace("res://", ""))
+	var err = img.load(full)
 	if err != OK:
 		return null
 	img.resize(sz, sz, Image.INTERPOLATE_NEAREST)

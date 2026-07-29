@@ -120,15 +120,15 @@ func can_play_card() -> bool:
 func play_card(hand_idx: int, coord: Vector2i) -> bool:
 	if not can_play_card():
 		return false
-	var target = grid.get_cell(coord)
-	if target == null or target.pillar != null:
+	var cell = grid.get_cell(coord)
+	if cell == null or cell.pillar != null:
 		return false
 	var card = hand.play(hand_idx, coord)
 	if card == null:
 		return false
 	var p = RulePillar.new(card, coord, turn)
 	# pillar 出现时也占用"格子上层"标记,仍允许元素在底层。
-	target.pillar = p
+	cell.pillar = p
 	pillars.append(p)
 	energy.spend()
 	state_changed.emit()

@@ -19,7 +19,7 @@ func apply(grid: Grid) -> void:
 		return
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			var old_elem = cell.element
+			var _old_elem = cell.element
 			cell.element = card.result_element
 			cell.clear_states()
 			affected.append(target_coord)
