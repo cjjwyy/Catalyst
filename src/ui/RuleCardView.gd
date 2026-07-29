@@ -59,14 +59,14 @@ func _tooltip() -> String:
 	if card == null: return ""
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			return "转化: 柱子的扫描范围(r%d)内,\n每格%s 若其邻1格有 %s → 变 %s\n寿命 %d 回合" % [
+			return "转化: 柱子的扫描范围(r%d)内,\n每格%s 若范围内有 %s → 变 %s\n寿命 %d 回合" % [
 				card.radius,
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
 				CN.get(card.result_element,"?"),
 				card.life]
 		RuleCard.Kind.MULTIPLY:
-			return "增殖: 柱子的扫描范围(r%d)内,\n每格%s 若其邻1格有 %s → 空格生 %s\n寿命 %d 回合" % [
+			return "增殖: 柱子的扫描范围(r%d)内,\n每格%s 若范围内有 %s → 空格生 %s\n寿命 %d 回合" % [
 				card.radius,
 				CN.get(card.trigger_element,"?"),
 				CN.get(card.contact_element,"?"),
