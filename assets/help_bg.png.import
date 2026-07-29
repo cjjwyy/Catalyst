@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbnv6aiqgckrk"
-path="res://.godot/imported/btn_retry.png-5d5a42fb8eda094e5852b6d7ec059553.ctex"
+uid="uid://bgmyy8s33k2ax"
+path="res://.godot/imported/help_bg.png-7dc97ee92f39db888507db96da12eff7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_assets_backup/btn_retry.png"
-dest_files=["res://.godot/imported/btn_retry.png-5d5a42fb8eda094e5852b6d7ec059553.ctex"]
+source_file="res://assets/help_bg.png"
+dest_files=["res://.godot/imported/help_bg.png-7dc97ee92f39db888507db96da12eff7.ctex"]
 
 [params]
 

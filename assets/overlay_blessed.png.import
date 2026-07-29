@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3io1evwmh8sh"
-path="res://.godot/imported/wind_icon.png-4313a76c914b518d581506c740429726.ctex"
+uid="uid://b3l4bx75n3g0w"
+path="res://.godot/imported/overlay_blessed.png-5cac88322e2fea6ac42cf94e233594e9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_assets_backup/wind_icon.png"
-dest_files=["res://.godot/imported/wind_icon.png-4313a76c914b518d581506c740429726.ctex"]
+source_file="res://assets/overlay_blessed.png"
+dest_files=["res://.godot/imported/overlay_blessed.png-5cac88322e2fea6ac42cf94e233594e9.ctex"]
 
 [params]
 

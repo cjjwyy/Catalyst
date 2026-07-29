@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bcy8n2p87jw4v"
-path="res://.godot/imported/spore.png-d45031038f1b59d57fa5ddc19032a906.ctex"
+uid="uid://cbnv6aiqgckrk"
+path="res://.godot/imported/btn_retry.png-1de137c775de15de458e5bc3c8c8f96a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://_assets_backup/spore.png"
-dest_files=["res://.godot/imported/spore.png-d45031038f1b59d57fa5ddc19032a906.ctex"]
+source_file="res://assets/btn_retry.png"
+dest_files=["res://.godot/imported/btn_retry.png-1de137c775de15de458e5bc3c8c8f96a.ctex"]
 
 [params]
 
