@@ -53,14 +53,15 @@ func start_game(level_idx: int = -1) -> void:
 	all_card_defs = _load_rules()
 	var lvl_idx = level_manager.current_level + 1
 	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_idx)
-	# DEBUG: skip card copy loop
-	# for c in all_card_defs:
-	# 	if c.id == "steamify":
-	# 		for _i in range(2):
-	# 			all_card_defs.append(c)
-	# 	if c.id == "grow":
-	# 		for _i in range(2):
-	# 			all_card_defs.append(c)
+	# 在副本上迭代避免 append 导致的无限循环
+	var base = all_card_defs.duplicate()
+	for c in base:
+		if c.id == "steamify":
+			for _i in range(2):
+				all_card_defs.append(c)
+		if c.id == "grow":
+			for _i in range(2):
+				all_card_defs.append(c)
 	grid = _load_level(lvl.path)
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
