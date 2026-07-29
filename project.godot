@@ -12,8 +12,17 @@ config_version=5
 
 config/name="Catalyst"
 run/main_scene="res://scenes/test_minimal.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+
+[autoload]
+
+GameManager="*res://src/main/GameManager.gd"
 
 [display]
 
 window/size/viewport_width=800
 window/size/viewport_height=600
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
