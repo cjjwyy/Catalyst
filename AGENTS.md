@@ -5,8 +5,9 @@
 玩家在网格上放置"规则柱"激活元素连锁反应。详见 `docs/Catalyst-规划.md` (原始策划) 与 `docs/superpowers/specs/` 下各阶段规格。
 
 ## 当前阶段
-**第四阶段**: 多关卡系统 + 燃烧/孢子(第2关) + 冰晶/覆雪/冻结(第3关)。第4关(祝福+天灾)未实现。
-1-4 关: 10×10 → 12×12 → 14×14 → 16×16, 目标 100/300/700/1500。
+**第四阶段(已完成)**: 多关卡系统 + 燃烧/孢子(第2关) + 冰晶/覆雪/冻结(第3关) + 祝福/天灾(第4关)。
+1-4 关全部可玩: 10×10 → 12×12 → 14×14 → 16×16, 目标 100/300/700/1500。
+后续方向见 `docs/开发路线图与行动指南.md`。
 
 ## 技术栈
 - 引擎: Godot 4.x · 语言: GDScript
@@ -24,7 +25,7 @@ src/main/    GameManager (Autoload 总控) + LevelManager
 src/world/   LevelManager (关卡管理)
 data/        JSON 配置 (rules.json + levels/*.json)
 scenes/      .tscn 场景
-tests/       GDScript assert 自检 (25 个用例)
+tests/       GDScript 自检 (run_tests.gd 29 条 + whitebox_tests.gd 32 条 + 白盒测试用例.md)
 ```
 
 ## 核心判定机制
@@ -73,14 +74,15 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 | LAVA | 熔 | DUST | 催化剂尘,每5连播3粒 |
 | PLANT | 植 | SNOW | 覆雪,水+雪→冰,邻热消散 |
 | ORE | 矿 | | |
-| GRASS | 草 | | |
-| SPORE | 孢 | | |
+| GRASS | 草 | BLESSED | 祝福,该格反应连锁×2 (第4关) |
+| SPORE | 孢 | METEOR_LAVA | 陨石熔岩,衰减后变岩 (第4关) |
 | ICE | 冰 | | |
 
 ## 验证约定
-- `tests/run_tests.gd` 25 个 assert 用例, GameManager 启动时跑
+- `tests/run_tests.gd` 29 个 assert 用例, GameManager 启动时跑
+- `tests/whitebox_tests.gd` 32 条白盒用例(headless 跑: `godot --headless --path . --script res://tests/whitebox_tests.gd`, 可用 `-- --filter=TC-06`);"现状记录"用例断言当前(有缺陷)行为, 修复缺陷后需同步更新断言
 - 修规则/引擎 → 同处补 test
-- 渲染/UI 不测
+- 渲染/UI 逻辑可入白盒, 视觉观感不测
 
 ## 开发与运行
 - Godot 4.x 打开 `project.godot` → F5
