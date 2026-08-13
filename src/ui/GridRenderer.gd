@@ -217,6 +217,8 @@ func _draw_legend() -> void:
 		[Element.PLANT, "植"],
 		[Element.ORE, "矿"],
 		[Element.GRASS, "草"],
+		[Element.SPORE, "孢"],
+		[Element.ICE, "冰"],
 		[Element.NONE, "空"],
 	]
 	var i = 0
