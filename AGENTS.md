@@ -11,7 +11,7 @@
 
 ## 技术栈
 - 引擎: Godot 4.x · 语言: GDScript
-- 入口场景: `scenes/LevelSelect.tscn`
+- 入口场景: `scenes/SaveSelect.tscn` (选档/新游戏/调整存档); "新游戏" → `scenes/LevelSelect.tscn`
 - Autoload: `GameManager` (`src/main/GameManager.gd`, `/root/GameManager`)
 - 数据: `data/rules.json` (规则定义, 含 `level` 字段控制关卡出现), `data/levels/*.json` (关卡配置)
 
@@ -25,7 +25,7 @@ src/main/    GameManager (Autoload 总控) + LevelManager
 src/world/   LevelManager (关卡管理)
 data/        JSON 配置 (rules.json + levels/*.json)
 scenes/      .tscn 场景
-tests/       GDScript 自检 (run_tests.gd 29 条 + whitebox_tests.gd 32 条 + 白盒测试用例.md)
+tests/       GDScript 自检 (run_tests.gd 30 条 + whitebox_tests.gd 36 条 + 白盒测试用例.md)
 ```
 
 ## 核心判定机制
@@ -54,6 +54,7 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 | 关卡数 | 4 (10/12/14/16) |
 | 手牌池 | 7 通用 + 2 孢子(第2关) + 2 冰(第3关) = 11 张 |
 | 初始手牌 | 5 |
+| 手牌上限 | 8 (超限抽牌进弃牌堆, 抽牌堆耗尽时弃牌堆循环重洗) |
 | 每回合抽牌 | 3 |
 | 能量上限 | 3 (所有牌 cost=1) |
 | 规则柱生命 | 4 回合 |
@@ -79,11 +80,13 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 | ICE | 冰 | | |
 
 ## 验证约定
-- `tests/run_tests.gd` 29 个 assert 用例, GameManager 启动时跑
-- `tests/whitebox_tests.gd` 32 条白盒用例(headless 跑: `godot --headless --path . --script res://tests/whitebox_tests.gd`, 可用 `-- --filter=TC-06`);"现状记录"用例断言当前(有缺陷)行为, 修复缺陷后需同步更新断言
+- `tests/run_tests.gd` 30 个 assert 用例, GameManager 启动时跑
+- `tests/whitebox_tests.gd` 36 条白盒用例(headless 跑: `godot --headless --path . --script res://tests/whitebox_tests.gd`, 可用 `-- --filter=TC-06`);"现状记录"用例断言当前(有缺陷)行为, 修复缺陷后需同步更新断言
+- 测试环境注意: 本机沙箱需重定向 APPDATA(`$env:APPDATA='<工作区>\.godot-user'`)否则 Godot 写 user:// 日志会崩溃; 游戏逻辑随机走 `GameManager.rng`(可播种, randi() 流在 4.7 不可播种), 洗牌/尘走全局 seed()
 - 修规则/引擎 → 同处补 test
 - 渲染/UI 逻辑可入白盒, 视觉观感不测
 
 ## 开发与运行
 - Godot 4.x 打开 `project.godot` → F5
-- 启动: 关卡选择 → 点关卡 → 点手牌→落柱 → 执行演化 → 下一关/重试/主菜单
+- 启动: 存档选择(选档/新游戏/调整存档) → 关卡选择 → 点手牌→落柱 → 执行演化(可 4x/跳过) → 存档 → 下一关/重试/主菜单
+- 存档: `user://save.cfg` (meta 全局解锁 + 3 槽单局快照), 由 `src/world/SaveManager.gd` 管理; 覆盖确认仅对非来源槽, `loaded_from_slot` 只在加载时置位
