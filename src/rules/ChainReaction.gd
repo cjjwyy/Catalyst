@@ -62,7 +62,10 @@ func _snapshot(grid: Grid) -> String:
 	return s
 
 # 异步执行,每次 Reaction 之间等待 frame_delay,供 UI 演示
-func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
+# speed: 动画倍速(>0), <=0 表示跳过动画, 同步结算(仍逐条发 reaction_applied)
+func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: float = 1.0) -> int:
+	if speed <= 0.0:
+		return execute(grid, pillars)
 	var engine = RuleEngine.new()
 	var chain = 0
 	var changed: Array = []
@@ -106,7 +109,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1) -> int:
 				any_effect = true
 				await Engine.get_main_loop().process_frame
 				if frame_delay > 0.0:
-					await Engine.get_main_loop().create_timer(frame_delay).timeout
+					await Engine.get_main_loop().create_timer(frame_delay / speed).timeout
 		if not any_effect:
 			break
 		reactions = engine.evaluate_restricted(grid, pillars, new_changed)

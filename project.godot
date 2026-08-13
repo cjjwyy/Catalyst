@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Catalyst"
-run/main_scene="res://scenes/LevelSelect.tscn"
+run/main_scene="res://scenes/SaveSelect.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
@@ -22,3 +22,7 @@ GameManager="*res://src/main/GameManager.gd"
 
 window/size/viewport_width=1500
 window/size/viewport_height=1000
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0

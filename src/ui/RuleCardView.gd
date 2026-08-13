@@ -10,6 +10,7 @@ func setup(c, idx: int) -> void:
 	index = idx
 	text = _label()
 	tooltip_text = _tooltip()
+	add_theme_font_size_override("font_size", 12)  # T1.2: 130px 卡面宽度下 12px 字号不裁剪
 	pressed.connect(_on_pressed)
 
 func refresh() -> void:

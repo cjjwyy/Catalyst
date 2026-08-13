@@ -21,6 +21,7 @@ static func run_all() -> bool:
 	ok = ok and _test_extinct_counts_grass()
 	ok = ok and _test_level_manager()
 	ok = ok and _test_level_load()
+	ok = ok and _test_hand_cap()
 	ok = ok and _test_sporify()
 	ok = ok and _test_spore_bloom()
 	ok = ok and _test_burning_ignite()
@@ -402,6 +403,36 @@ static func _test_level_load() -> bool:
 		assert(int(data.size[0]) == lvl.size[0], "level %d size mismatch" % i)
 		assert(int(data.target) == lvl.target, "level %d target mismatch" % i)
 	print("test_level_load OK (4 levels verified)")
+	return true
+
+static func _test_hand_cap() -> bool:
+	# T1.2: 手牌上限 8, 超限抽牌进弃牌堆; 抽牌堆耗尽后弃牌堆循环重洗; 牌总数守恒
+	var hm = HandManager.new()
+	var cards: Array = []
+	for i in range(11):
+		var c = RuleCard.new()
+		c.from_dict({"id": "c%d" % i, "name": "c%d" % i, "kind": "TRANSFORM", "radius": 2, "life": 4})
+		cards.append(c)
+	hm.fill_draw_pile(cards)
+	hm.refill_to(5)
+	assert(hm.hand_size() == 5, "初始手牌应为 5, 实际 %d" % hm.hand_size())
+	for _i in range(10):
+		hm.draw(3)
+	assert(hm.hand_size() == HandManager.MAX_HAND, "手牌应封顶 %d, 实际 %d" % [HandManager.MAX_HAND, hm.hand_size()])
+	var total = hm.hand_size() + hm.draw_pile.size() + hm.discard_pile.size()
+	assert(total == 11, "手牌+抽牌堆+弃牌堆应守恒(11), 实际 %d" % total)
+	# 继续抽牌迫使弃牌堆循环重洗
+	for _i in range(20):
+		hm.draw(1)
+	assert(hm.hand_size() == HandManager.MAX_HAND, "持续抽牌手牌仍应封顶")
+	var after = hm.hand_size() + hm.draw_pile.size() + hm.discard_pile.size()
+	assert(after == 11, "循环重洗后总牌数应守恒(11), 实际 %d" % after)
+	# 手牌满时继续抽牌: 抽到的牌进弃牌堆, 总牌数守恒, 手牌仍封顶
+	hm.draw(3)
+	assert(hm.hand_size() == HandManager.MAX_HAND, "手牌满时抽牌手牌仍应封顶")
+	var final = hm.hand_size() + hm.draw_pile.size() + hm.discard_pile.size()
+	assert(final == 11, "任何抽牌后总牌数应守恒(11), 实际 %d" % final)
+	print("test_hand_cap OK")
 	return true
 
 static func _test_sporify() -> bool:

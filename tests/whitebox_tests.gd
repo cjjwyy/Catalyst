@@ -10,6 +10,7 @@ extends SceneTree
 
 const RULES_PATH := "res://data/rules.json"
 const LEVEL_SELECT_SCENE := "res://scenes/LevelSelect.tscn"
+const SAVE_SELECT_SCENE := "res://scenes/SaveSelect.tscn"
 const MAIN_SCENE := "res://scenes/Main.tscn"
 const GRID_RENDERER_SCRIPT := "res://src/ui/GridRenderer.gd"
 
@@ -46,9 +47,12 @@ func _initialize() -> void:
 		["TC-10", "第4关天灾概率与陨石化岩", tc10_天灾概率与陨石化岩],
 		["TC-11", "死寂10回合判负", tc11_死寂判负],
 		["TC-12", "BLESSED格连锁翻倍", tc12_blessed连锁翻倍],
-		["TC-13", "关卡进度不持久化现状", tc13_进度不持久化现状],
-		["TC-14", "手牌无上限与布局溢出", tc14_手牌无上限与溢出],
-		["TC-15", "200连锁演化耗时区间", tc15_演化耗时区间],
+		["TC-13", "三槽存档读写", tc13_三槽存档读写],
+		["TC-13b", "覆盖确认与来源槽", tc13b_覆盖确认与来源槽],
+		["TC-13c", "时间戳与增删改", tc13c_时间戳与增删改],
+		["TC-13d", "序列化往返无损", tc13d_序列化往返无损],
+		["TC-14", "手牌上限与布局容量", tc14_手牌上限与布局容量],
+		["TC-15", "200连锁演化耗时与跳过", tc15_演化耗时区间],
 		["TC-16", "振荡棋盘有限终止", tc16_振荡有限终止],
 		["TC-17", "各关格子尺寸与可视范围", tc17_各关格子尺寸],
 		["TC-18", "16x16关控件互不遮挡", tc18_控件互不遮挡],
@@ -56,6 +60,7 @@ func _initialize() -> void:
 		["TC-20", "手牌区宽度容量", tc20_手牌区宽度容量],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
+		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
 		["TC-23a", "帮助文本不溢出面板", tc23a_帮助文本不溢出],
 		["TC-23b", "空规则文件降级死锁现状", tc23b_空规则文件降级],
 		["TC-25", "非法字段静默降级", tc25_非法字段降级],
@@ -132,11 +137,19 @@ func tc01_关卡选择页可打开() -> void:
 		return
 	var buttons: Array = scene.buttons
 	_check(buttons.size() == 4, "按钮数=%d, 期望 4 (4 个关卡)" % buttons.size())
-	if buttons.size() >= 1:
-		_check(buttons[0].disabled == false, "buttons[0].disabled=%s, 期望 false (第1关应解锁)" % buttons[0].disabled)
-	for i in range(1, buttons.size()):
-		_check(buttons[i].disabled == true, "buttons[%d].disabled=%s, 期望 true (第%d关未解锁)" % [i, buttons[i].disabled, i + 1])
+	# T1.4: 解锁状态来自持久化进度(level_manager.unlocked), 按钮锁定 = idx > unlocked
+	var lm = _gm.level_manager
+	for i in range(buttons.size()):
+		var expect_disabled: bool = i > lm.unlocked
+		_check(buttons[i].disabled == expect_disabled,
+			"buttons[%d].disabled=%s, 期望 %s (unlocked=%d)" % [i, buttons[i].disabled, expect_disabled, lm.unlocked])
 	scene.free()
+	# T1.4: 新入口场景 SaveSelect 可实例化(选档/新游戏/调整存档)
+	var ss = load(SAVE_SELECT_SCENE).instantiate()
+	root.add_child(ss)
+	await self.process_frame
+	_check(ss.get_node_or_null("BG") != null, "SaveSelect 缺 BG 背景节点")
+	ss.free()
 
 # ---------- TC-02 ----------
 func tc02_四关开局状态() -> void:
@@ -212,23 +225,40 @@ func tc05_主要按钮键盘可聚焦() -> void:
 
 # ---------- TC-06 ----------
 func tc06_第1关贪心可通关() -> void:
-	seed(20240812)
+	seed(20240812)              # 手牌洗牌/催化剂尘(pick_random/shuffle 流)
+	_gm.rng.seed = 20240812     # T1.2: 世界规则/风(游戏逻辑 rng 流) —— 双流定种, 轨迹完全确定
 	_gm.start_game(0)
 	for turn in range(20):
 		var placed := 0
-		for card_idx in range(_gm.hand.hand_size()):
-			if placed >= _gm.energy.current:
+		# T1.2: 手牌上限后手牌数小, 循环改为"每次重新扫描当前手牌", 避免 pop 后索引越界;
+		# 策略: 有限资源引擎(熔岩/矿/汽)优先, 之后走可持续的岩化→草生→草殖→灭绝循环
+		while placed < _gm.energy.current:
+			var played_any := false
+			var priority := ["steamify", "harvest", "grow", "extinct", "petrify", "grass_grow", "grass_spread"]
+			for pid in priority:
+				for card_idx in range(_gm.hand.hand_size()):
+					var card: Resource = _gm.hand.hand[card_idx]
+					if card.id != pid:
+						continue
+					var spot := _find_pair_spot(card.trigger_element, card.contact_element)
+					if spot.x >= 0 and _gm.play_card(card_idx, spot):
+						placed += 1
+						played_any = true
+						break
+				if played_any:
+					break
+			if played_any:
+				continue
+			# 兜底: 打任意有触发位的牌(循环手牌)
+			for card_idx in range(_gm.hand.hand_size()):
+				var card2: Resource = _gm.hand.hand[card_idx]
+				var spot2 := _find_pair_spot(card2.trigger_element, card2.contact_element)
+				if spot2.x >= 0 and _gm.play_card(card_idx, spot2):
+					placed += 1
+					played_any = true
+					break
+			if not played_any:
 				break
-			var card: Resource = _gm.hand.hand[card_idx]
-			var spot := Vector2i(-1, -1)
-			if card.id == "harvest":
-				spot = _find_spot(Element.PLANT, Element.ORE)
-			elif card.id == "steamify":
-				spot = _find_spot(Element.WATER, Element.LAVA)
-			elif card.id == "grow":
-				spot = _find_spot(Element.PLANT, Element.STEAM)
-			if spot.x >= 0 and _gm.play_card(card_idx, spot):
-				placed += 1
 		if not _gm.pillars.is_empty():
 			await _gm.execute()
 		else:
@@ -247,6 +277,28 @@ func _find_spot(trigger: int, contact: int) -> Vector2i:
 				sc += 2
 			elif n.element == contact:
 				sc += 1
+		if sc > best:
+			best = sc
+			best_coord = c.coord
+	return best_coord
+
+# 要求触发元素与接触元素同时存在于柱子半径内(contact=NONE 时只要求触发元素)
+func _find_pair_spot(trigger: int, contact: int) -> Vector2i:
+	var best := -1
+	var best_coord := Vector2i(-1, -1)
+	for c in _gm.grid.all_cells():
+		if c.pillar != null:
+			continue
+		var trig := 0
+		var cont := 0
+		for n in _gm.grid.cells_in_radius(c.coord, 2):
+			if n.element == trigger:
+				trig += 1
+			elif contact != Element.NONE and n.element == contact:
+				cont += 1
+		if trig == 0 or (contact != Element.NONE and cont == 0):
+			continue
+		var sc := trig * 2 + cont
 		if sc > best:
 			best = sc
 			best_coord = c.coord
@@ -327,6 +379,7 @@ func tc09_世界规则生成量() -> void:
 # ---------- TC-10 ----------
 func tc10_天灾概率与陨石化岩() -> void:
 	seed(20240813)
+	_gm.rng.seed = 20240813  # T1.2: 天灾随机源改为 rng, 固定种子下 100 次触发数确定
 	_gm.start_game(3)
 	_check(_gm.level_manager.current_level == 3, "current_level=%d, 期望 3 (第4关)" % _gm.level_manager.current_level)
 	var meteor := 0
@@ -399,27 +452,135 @@ func tc12_blessed连锁翻倍() -> void:
 	var chain = runner.execute(g, [_pillar(card, 1, 1)])
 	_check(chain == 2, "BLESSED 格连锁=%d, 期望 2 (chain_reward 1 翻倍, ChainReaction.gd:99-104)" % chain)
 
-# ---------- TC-13 (现状记录) ----------
-func tc13_进度不持久化现状() -> void:
-	var lm = _gm.level_manager
-	_check(lm.unlocked == 0, "初始 unlocked=%d, 期望 0" % lm.unlocked)
-	_check(lm.advance(), "advance() 失败")
-	_check(lm.unlocked == 1 and lm.current_level == 1, "advance 后 unlocked=%d/current=%d, 期望 1/1" % [lm.unlocked, lm.current_level])
-	var LM = load("res://src/world/LevelManager.gd")
-	var fresh = LM.new()
-	_check(fresh.unlocked == 0, "重启(新实例)后 unlocked=%d, 期望 0 —— 现状记录: 进度不持久化, 每次启动回到第1关 (缺陷, 修复持久化后此断言需更新为 unlocked 应保留)" % fresh.unlocked)
-	# 恢复现场, 避免影响后续用例
-	_gm.level_manager = LM.new()
+# ---------- TC-13 (T1.4 三槽存档) ----------
+func tc13_三槽存档读写() -> void:
+	# T1.4: 存槽 → 读槽恢复一致; 全局 unlocked 独立持久化(删槽不丢)
+	_gm.start_game(0)
+	_gm.grid.get_cell(Vector2i(3, 3)).element = Element.LAVA
+	_gm.turn = 7
+	_gm.chain_total = 42
+	var before: String = _grid_hash(_gm.grid)
+	# 用测试专用存档路径隔离, 不碰真实 user://save.cfg
+	var orig_sm = _gm.save_manager
+	var sm = load("res://src/world/SaveManager.gd").new()
+	sm.use_path("user://test_save_a.cfg")
+	_gm.save_manager = sm
+	_check(_gm.save_game(0, "测试档"), "存档到槽0失败")
+	_check(sm.has_slot(0), "槽0应有存档")
+	_check(sm.slot_name(0) == "测试档", "槽名=%s, 期望 测试档" % sm.slot_name(0))
+	# 模拟重启: 新 SaveManager 实例读同一文件
+	var sm2 = load("res://src/world/SaveManager.gd").new()
+	sm2.use_path("user://test_save_a.cfg")
+	_check(sm2.has_slot(0), "重启(新实例)后槽0应仍存在")
+	_check(sm2.slot_name(0) == "测试档", "重启后槽名应保留")
+	# 读档恢复
+	_gm.start_game(2)
+	_check(_gm.load_game(0), "读槽0失败")
+	_check(_gm.level_manager.current_level == 0, "读档后关卡=%d, 期望 0" % _gm.level_manager.current_level)
+	_check(_gm.turn == 7 and _gm.chain_total == 42, "读档后 turn=%d/chain=%d, 期望 7/42" % [_gm.turn, _gm.chain_total])
+	_check(_grid_hash(_gm.grid) == before, "读档后网格应与存档一致")
+	# unlocked 独立持久化: advance 后删槽, unlocked 仍在
+	_gm.level_manager.unlocked = 2
+	sm.set_unlocked(2)
+	sm.delete_slot(0)
+	var sm3 = load("res://src/world/SaveManager.gd").new()
+	sm3.use_path("user://test_save_a.cfg")
+	_check(sm3.get_unlocked() == 2, "删槽后 unlocked=%d, 期望 2 (全局进度独立持久化)" % sm3.get_unlocked())
+	_check(sm3.has_slot(0) == false, "删槽后槽0应为空")
+	# 恢复现场
+	_gm.save_manager = orig_sm
+	_gm.level_manager.unlocked = orig_sm.get_unlocked()
+	_cleanup_save("user://test_save_a.cfg")
 	_gm.start_game(0)
 
+# ---------- TC-13b ----------
+func tc13b_覆盖确认与来源槽() -> void:
+	# T1.4: 覆盖非来源槽需确认; 本局来源槽静默覆盖; 覆盖后标记更新; 删除来源槽后标记置 -1
+	var sm = load("res://src/world/SaveManager.gd").new()
+	sm.use_path("user://test_save_b.cfg")
+	sm.save_slot(0, "A", {"v": 1})
+	_check(sm.should_confirm_overwrite(0) == true, "无来源槽(loaded_from_slot=-1)时存非空槽应需确认")
+	sm.load_slot(0)
+	_check(sm.loaded_from_slot == 0, "load_slot 后 loaded_from_slot 应为 0")
+	_check(sm.should_confirm_overwrite(0) == false, "本局来源槽再存不应提示确认")
+	sm.save_slot(0, "A2", {"v": 2})
+	_check(sm.slot_name(0) == "A2", "覆盖后槽名应更新为 A2")
+	_check(sm.loaded_from_slot == 0, "普通存档不应改变来源标记")
+	sm.save_slot(1, "B", {"v": 3})
+	_check(sm.loaded_from_slot == 0, "存到其他槽也不应改变来源标记(仍为 0)")
+	_check(sm.should_confirm_overwrite(1) == true, "来源=0 时覆盖非空槽1应需确认")
+	sm.delete_slot(0)
+	_check(sm.loaded_from_slot == -1, "删除来源槽后标记应置 -1")
+	_check(sm.should_confirm_overwrite(1) == true, "标记=-1 时覆盖非空槽应需确认")
+	_cleanup_save("user://test_save_b.cfg")
+
+# ---------- TC-13c ----------
+func tc13c_时间戳与增删改() -> void:
+	# T1.4: 最后存档时间精确到秒, 格式 YYYY-MM-DD HH:MM:SS; 重命名/删除生效
+	var sm = load("res://src/world/SaveManager.gd").new()
+	sm.use_path("user://test_save_c.cfg")
+	var t0 := int(Time.get_unix_time_from_system())
+	sm.save_slot(0, "第一档", {})
+	var t = sm.slot_timestamp(0)
+	_check(t >= t0 and t <= t0 + 5, "时间戳应为当前时间(秒): %d in [%d, %d]" % [t, t0, t0 + 5])
+	var re = RegEx.new()
+	re.compile("^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}$")
+	var text: String = sm.slot_time_text(0)
+	_check(re.search(text) != null, "时间文本=%s, 期望 YYYY-MM-DD HH:MM:SS (秒级)" % text)
+	sm.rename_slot(0, "改名档")
+	_check(sm.slot_name(0) == "改名档", "重命名应生效")
+	sm.delete_slot(0)
+	_check(not sm.has_slot(0), "删除后槽0应为空")
+	_check(sm.slot_time_text(0) == "", "空槽时间文本应为空")
+	_cleanup_save("user://test_save_c.cfg")
+
+# ---------- TC-13d ----------
+func tc13d_序列化往返无损() -> void:
+	# T1.4: 快照 round-trip 无损(元素/状态/柱/手牌/回合/风)
+	_gm.start_game(1)
+	var orig_sm = _gm.save_manager
+	var sm = load("res://src/world/SaveManager.gd").new()
+	sm.use_path("user://test_save_d.cfg")
+	_gm.save_manager = sm
+	var g = _gm.grid
+	g.get_cell(Vector2i(2, 2)).element = Element.SPORE
+	g.get_cell(Vector2i(2, 2)).add_state(State.DUST, 3)
+	g.get_cell(Vector2i(3, 3)).element = Element.ICE
+	var card = _rule_card_from_json("steamify")
+	var p = _pillar(card, 5, 5, 0)
+	g.get_cell(Vector2i(5, 5)).pillar = p
+	_gm.pillars.append(p)
+	_gm.turn = 9
+	_gm.wind_dir = 2
+	_gm.wind_speed = 3
+	var hash_before: String = _grid_hash(g)
+	var hand_before: int = _gm.hand.hand_size()
+	_gm.save_game(0, "往返")
+	_gm.start_game(3)
+	_check(_gm.load_game(0), "读档失败")
+	_check(_gm.turn == 9 and _gm.wind_dir == 2 and _gm.wind_speed == 3, "读档后 turn/风应恢复")
+	_check(_gm.hand.hand_size() == hand_before, "读档后手牌数应恢复")
+	_check(_gm.pillars.size() == 1, "读档后柱子数=1, 实际 %d" % _gm.pillars.size())
+	_check(_grid_hash(_gm.grid) == hash_before, "round-trip 后网格哈希应一致")
+	_gm.save_manager = orig_sm
+	_cleanup_save("user://test_save_d.cfg")
+	_gm.start_game(0)
+
+func _cleanup_save(path: String) -> void:
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
 # ---------- TC-14 ----------
-func tc14_手牌无上限与溢出() -> void:
+func tc14_手牌上限与布局容量() -> void:
+	# T1.2: 手牌上限 8(HandManager.MAX_HAND), 超限抽牌进弃牌堆; 牌总数守恒;
+	# 8 张 × 130px 卡面 + 间距 ≤ 1100px 容器宽, 布局不再溢出
 	_gm.start_game(0)
 	for _i in range(30):
 		_gm.end_turn()
-	_check(_gm.hand.hand_size() == 95, "30回合不打牌后手牌=%d, 期望 95 (5 + 30x3, HandManager.draw 无上限)" % _gm.hand.hand_size())
-	var w := 95 * 150 + 94 * 6
-	_check(w > 1100, "手牌区所需宽度=%dpx, 期望 >1100 (HandContainer 可用宽 180..1280) —— 手牌溢出必然发生" % w)
+	_check(_gm.hand.hand_size() == 8, "30回合不打牌后手牌=%d, 期望 8 (HandManager.MAX_HAND 上限)" % _gm.hand.hand_size())
+	var total: int = _gm.hand.hand_size() + _gm.hand.draw_pile.size() + _gm.hand.discard_pile.size()
+	_check(total == _gm.all_card_defs.size(), "牌守恒: 手牌+抽牌堆+弃牌堆=%d, 期望 %d (第1关牌池 11)" % [total, _gm.all_card_defs.size()])
+	var w := 8 * 130 + 7 * 6
+	_check(w == 1082 and w <= 1100, "8张手牌(上限)所需宽=%dpx, 期望 1082 ≤ 1100 (HandContainer 可用宽, 卡面 130px/张)" % w)
 
 # ---------- TC-15 ----------
 func tc15_演化耗时区间() -> void:
@@ -435,10 +596,46 @@ func tc15_演化耗时区间() -> void:
 	]
 	var runner = load("res://src/rules/ChainReaction.gd").new()
 	var t0 := Time.get_ticks_msec()
-	var chain = await runner.execute_async(g, pillars, 0.1)
+	var chain = await runner.execute_async(g, pillars, 0.1, 1.0)
 	var elapsed := (Time.get_ticks_msec() - t0) / 1000.0
-	_check(chain >= 180 and chain <= 220, "200格WATER棋盘演化连锁=%d, 期望 200±20" % chain)
-	_check(elapsed >= 18.0 and elapsed <= 45.0, "演化耗时=%0.1fs, 期望 (18s, 45s] (200反应 x 0.1s + 帧开销)" % elapsed)
+	_check(chain >= 180 and chain <= 220, "1x 棋盘演化连锁=%d, 期望 200±20" % chain)
+	_check(elapsed >= 18.0 and elapsed <= 45.0, "1x 演化耗时=%0.1fs, 期望 (18s, 45s] (200反应 x 0.1s + 帧开销)" % elapsed)
+	# T1.3: 跳过档(speed<=0)与同步 execute 结果一致, 且 <2s
+	var g2 = Grid.new(40, 20)
+	_flash_grid(g2, 0, 1)
+	var runner2 = load("res://src/rules/ChainReaction.gd").new()
+	seed(20240815)
+	var chain_sync = runner2.execute(g2, pillars)
+	var g3 = Grid.new(40, 20)
+	_flash_grid(g3, 0, 1)
+	var runner3 = load("res://src/rules/ChainReaction.gd").new()
+	seed(20240815)
+	var t1 := Time.get_ticks_msec()
+	var chain_skip = await runner3.execute_async(g3, pillars, 0.1, 0.0)
+	var skip_elapsed := (Time.get_ticks_msec() - t1) / 1000.0
+	_check(chain_skip == chain_sync, "跳过档连锁=%d 应与同步执行=%d 一致(同种子)" % [chain_skip, chain_sync])
+	_check(_grid_hash(g2) == _grid_hash(g3), "跳过档终局网格应与同步执行一致")
+	_check(skip_elapsed < 2.0, "跳过档耗时=%0.2fs, 期望 <2s" % skip_elapsed)
+	# T1.3: 4x 档结果与同步一致, 且明显快于 1x
+	var g4 = Grid.new(40, 20)
+	_flash_grid(g4, 0, 1)
+	var runner4 = load("res://src/rules/ChainReaction.gd").new()
+	seed(20240815)
+	var t2 := Time.get_ticks_msec()
+	var chain_fast = await runner4.execute_async(g4, pillars, 0.1, 4.0)
+	var fast_elapsed := (Time.get_ticks_msec() - t2) / 1000.0
+	_check(chain_fast == chain_sync, "4x档连锁=%d 应与同步执行=%d 一致(同种子)" % [chain_fast, chain_sync])
+	_check(_grid_hash(g2) == _grid_hash(g4), "4x档终局网格应与同步执行一致")
+	_check(fast_elapsed < 12.0 and fast_elapsed < elapsed, "4x档耗时=%0.2fs, 期望 <12s 且快于 1x(%0.1fs)" % [fast_elapsed, elapsed])
+
+func _grid_hash(g: Grid) -> String:
+	var s := ""
+	for c in g.all_cells():
+		s += "%d;" % c.element
+		for st in c.states.keys():
+			s += "%d:%d," % [st, c.states[st]]
+		s += "|"
+	return s
 
 # ---------- TC-16 ----------
 func tc16_振荡有限终止() -> void:
@@ -504,12 +701,12 @@ func tc19_图例元素完整性() -> void:
 func tc20_手牌区宽度容量() -> void:
 	_gm.start_game(0)
 	_check(_gm.all_card_defs.size() == 11, "第1关牌池=%d, 期望 11 (7基础 + 2xsteamify + 2xgrow)" % _gm.all_card_defs.size())
-	var w7 := 7 * 150 + 6 * 6
-	_check(w7 == 1086 and w7 <= 1100, "7张手牌宽=%d, 期望 1086<=1100 (可容纳)" % w7)
+	var w8 := 8 * 130 + 7 * 6
+	_check(w8 == 1082 and w8 <= 1100, "8张手牌(上限)宽=%d, 期望 1082<=1100 (卡面 130px/张, 可容纳)" % w8)
 	_gm.start_game(3)
 	_check(_gm.all_card_defs.size() == 13, "第4关牌池=%d, 期望 13 (level 过滤: 7基础+2祝福/陨石+2xsteamify+2xgrow; 孢子/冰卡仅出现于其专属关)" % _gm.all_card_defs.size())
-	var w17 := 13 * 150 + 12 * 6
-	_check(w17 > 1100, "13张手牌宽=%d, 期望 >1100 (溢出 HandContainer, 量化基准)" % w17)
+	var w17 := 13 * 130 + 12 * 6
+	_check(w17 > 1100, "13张牌池全展开宽=%d, 期望 >1100 —— 量化记录: 若无手牌上限(8)仍会溢出, 上限为必要约束" % w17)
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:
@@ -529,12 +726,62 @@ func tc21_贴图资源完整() -> void:
 
 # ---------- TC-22 ----------
 func tc22_贴图缩放比例() -> void:
+	# T1.5: 贴图原生尺寸为 1024x1024(earth/ice/overlay_frozen 为 1254x1254),
+	# 绘制到 cell_size(52-64px) 属大幅缩小; 断言项目级过滤为 Nearest 防糊,
+	# 且绘制/原生比例落在 [1/64, 1/4] 带内(不合理过小/过大均失败)
+	var filter_setting: int = ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter", 1)
+	_check(filter_setting == 0, "项目 default_texture_filter=%d, 期望 0 (Nearest, 像素风清晰锐利)" % filter_setting)
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
 	_gm.start_game(3)
 	renderer.set_grid(_gm.grid)
 	_check(renderer.cell_size == 52, "16x16 cell_size=%d, 期望 52 (本用例前提)" % renderer.cell_size)
-	var ratio := 52.0 / 64.0
-	_check(ratio >= 0.75 and ratio <= 1.25, "缩放比例=%0.3f, 期望 [0.75,1.25] (64px 原图 -> 52px 目标)" % ratio)
+	for p in renderer.ELEMENT_PATHS.values():
+		var tex = load(p)
+		if tex == null:
+			_check(false, "贴图加载失败: %s" % p)
+			continue
+		var native := float(tex.get_width())
+		var ratio: float = renderer.cell_size / native
+		_check(ratio >= 1.0 / 64.0 and ratio <= 0.25,
+			"贴图 %s 绘制/原生比例=%0.4f, 期望 [1/64, 1/4] (原生 %dpx → 绘制 %dpx)" % [p, ratio, int(native), renderer.cell_size])
+
+# ---------- TC-22b ----------
+func tc22b_贴图矩形宽高比与越界() -> void:
+	# T1.5: 场景内所有 TextureRect 的 rect 宽高比须与贴图一致(<5% 偏差),
+	# 且 rect 完整落在 1500x1000 视口内
+	var scenes := [LEVEL_SELECT_SCENE, MAIN_SCENE]
+	for sc in scenes:
+		var scene = load(sc).instantiate()
+		root.add_child(scene)
+		await self.process_frame
+		var nodes: Array = []
+		_collect_texture_rects(scene, nodes)
+		_check(nodes.size() > 0, "场景 %s 无 TextureRect?" % sc)
+		for tr in nodes:
+			var tex = tr.texture
+			if tex == null:
+				_check(false, "场景 %s 节点 %s 无贴图" % [sc, tr.name])
+				continue
+			var tw := float(tex.get_width())
+			var th := float(tex.get_height())
+			var rw: float = tr.size.x
+			var rh: float = tr.size.y
+			if tw <= 0.0 or th <= 0.0 or rw <= 0.0 or rh <= 0.0:
+				_check(false, "场景 %s 节点 %s 尺寸非法 (rect %dx%d, tex %dx%d)" % [sc, tr.name, int(rw), int(rh), int(tw), int(th)])
+				continue
+			var aspect_tex := tw / th
+			var aspect_rect: float = rw / rh
+			var dev := absf(aspect_rect - aspect_tex) / aspect_tex
+			_check(dev < 0.05, "场景 %s 节点 %s 宽高比偏差=%0.3f, 期望 <0.05 (rect %dx%d, tex %dx%d)" % [sc, tr.name, dev, int(rw), int(rh), int(tw), int(th)])
+			_check(tr.position.x >= -0.5 and tr.position.y >= -0.5 and tr.position.x + rw <= 1500.5 and tr.position.y + rh <= 1000.5,
+				"场景 %s 节点 %s rect(%s %dx%d) 越出 1500x1000 视口" % [sc, tr.name, tr.position, int(rw), int(rh)])
+		scene.free()
+
+func _collect_texture_rects(node: Node, out: Array) -> void:
+	if node is TextureRect:
+		out.append(node)
+	for child in node.get_children():
+		_collect_texture_rects(child, out)
 
 # ---------- TC-23a ----------
 func tc23a_帮助文本不溢出() -> void:
@@ -546,8 +793,13 @@ func tc23a_帮助文本不溢出() -> void:
 	_check(ts != null, "TextServer 主接口为空, 无法测量")
 	if ts != null:
 		var font_rids: Array = ThemeDB.fallback_font.get_rids()
-		var sz = ts.font_get_string_size(font_rids[0], 12, label.text, 684)
-		_check(sz.y <= 650, "帮助文本渲染高度=%0.0fpx, 期望 <=650 (HelpPanel 高度, 文本不溢出面板)" % sz.y)
+		# T1.5: Godot 4.7 中 font_get_string_size 已移除, 改用 shaped text 测量
+		var st = ts.create_shaped_text()
+		ts.shaped_text_add_string(st, label.text, font_rids, 12)
+		ts.shaped_text_fit_to_width(st, int(label.size.x))
+		var sz = ts.shaped_text_get_size(st)
+		ts.free_rid(st)
+		_check(sz.y <= label.size.y, "帮助文本渲染高度=%0.0fpx, 期望 <=%0.0f (HelpLabel 实际高度, 文本不溢出面板)" % [sz.y, label.size.y])
 	main.free()
 
 # ---------- TC-23b (现状记录) ----------

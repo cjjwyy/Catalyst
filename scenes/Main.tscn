@@ -35,7 +35,7 @@ text = "?"
 visible = false
 offset_left = 400.0
 offset_top = 100.0
-offset_right = 1100.0
+offset_right = 1375.0
 offset_bottom = 750.0
 mouse_filter = 2
 stretch_mode = 1
@@ -45,8 +45,8 @@ texture = ExtResource("5_helpbg")
 [node name="HelpLabel" type="Label" parent="HelpPanel"]
 offset_left = 16.0
 offset_top = 8.0
-offset_right = 684.0
-offset_bottom = 650.0
+offset_right = 959.0
+offset_bottom = 642.0
 theme_override_font_sizes/font = 12
 text = "新手入门:
 · 核心目标: 利用各种规则卡牌形成连锁反应，单次演化累计达到关卡目标连锁数后即可进入下一关
@@ -114,6 +114,14 @@ offset_bottom = 130.0
 theme_override_font_sizes/font = 13
 text = "1.点手牌 2.点网格 右键=撤回  ?=帮助"
 
+[node name="HandCountLabel" type="Label" parent="."]
+offset_left = 20.0
+offset_top = 134.0
+offset_right = 148.0
+offset_bottom = 160.0
+theme_override_font_sizes/font = 14
+text = "手牌: 5/8"
+
 [node name="HandContainer" type="HBoxContainer" parent="."]
 offset_left = 180.0
 offset_top = 890.0
@@ -128,6 +136,22 @@ offset_right = 1460.0
 offset_bottom = 950.0
 text = "执行演化"
 
+[node name="SpeedButton" type="Button" parent="."]
+visible = false
+offset_left = 1300.0
+offset_top = 956.0
+offset_right = 1378.0
+offset_bottom = 986.0
+text = "4x加速"
+
+[node name="SkipButton" type="Button" parent="."]
+visible = false
+offset_left = 1382.0
+offset_top = 956.0
+offset_right = 1460.0
+offset_bottom = 986.0
+text = "跳过"
+
 [node name="MenuButton" type="Button" parent="."]
 offset_left = 1300.0
 offset_top = 875.0
@@ -135,12 +159,19 @@ offset_right = 1460.0
 offset_bottom = 905.0
 text = "主菜单"
 
+[node name="SaveButton" type="Button" parent="."]
+offset_left = 1300.0
+offset_top = 843.0
+offset_right = 1460.0
+offset_bottom = 871.0
+text = "存档"
+
 [node name="GameOverPanel" type="TextureRect" parent="."]
 visible = false
 offset_left = 400.0
 offset_top = 350.0
 offset_right = 1100.0
-offset_bottom = 500.0
+offset_bottom = 676.0
 mouse_filter = 2
 stretch_mode = 1
 expand_mode = 1

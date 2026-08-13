@@ -32,6 +32,8 @@ var pillars: Array = []
 var hand: HandManager
 var energy: EnergySystem
 var all_card_defs: Array = []
+var save_manager: SaveManager = SaveManager.new()
+var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确定性: 游戏逻辑随机源, 可播种(种子化 T3.8 的前置)
 
 signal state_changed
 signal reaction_applied(reaction)
@@ -43,16 +45,20 @@ func _ready() -> void:
 	Engine.get_main_loop().set_auto_accept_quit(true)
 	if not TestsScript.run_all():
 		push_error("Catalyst 自检失败")
-	start_game()
+	# T1.4: 应用持久化的全局通关进度; 不再自动开局(由选档/新游戏入口驱动)
+	level_manager.unlocked = save_manager.get_unlocked()
+	rng.randomize()  # 真实游戏随机; 测试通过 rng.seed 覆盖
 
-func start_game(level_idx: int = -1) -> void:
-	if level_idx >= 0:
-		level_manager.current_level = level_idx
-	var lvl = level_manager.get_current()
-	target = int(lvl.target)
+# 统一随机入口: [0, n) 均匀随机; Godot 4.7 的 randi() 流不可播种, 全部走 rng
+func _randi(n: int) -> int:
+	if n <= 1:
+		return 0
+	return rng.randi_range(0, n - 1)
+
+func _prepare_card_defs(lvl_idx: int) -> Array:
 	all_card_defs = _load_rules()
-	var lvl_idx = level_manager.current_level + 1
-	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_idx)
+	var lvl_n = lvl_idx + 1
+	all_card_defs = all_card_defs.filter(func(c): return c.level == 0 or c.level == lvl_n)
 	# 在副本上迭代避免 append 导致的无限循环
 	var base = all_card_defs.duplicate()
 	for c in base:
@@ -62,6 +68,14 @@ func start_game(level_idx: int = -1) -> void:
 		if c.id == "grow":
 			for _i in range(2):
 				all_card_defs.append(c)
+	return all_card_defs
+
+func start_game(level_idx: int = -1) -> void:
+	if level_idx >= 0:
+		level_manager.current_level = level_idx
+	var lvl = level_manager.get_current()
+	target = int(lvl.target)
+	_prepare_card_defs(level_manager.current_level)
 	grid = _load_level(lvl.path)
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
@@ -73,6 +87,123 @@ func start_game(level_idx: int = -1) -> void:
 	phase = Phase.LAYOUT
 	_reroll_wind()
 	state_changed.emit()
+
+# T1.4: 由 Main 调用 —— 若无进行中的局则按当前关卡开局(支持读档后跳过重开)
+func ensure_game_started() -> void:
+	if grid == null:
+		start_game(level_manager.current_level)
+
+func persist_unlock() -> void:
+	save_manager.set_unlocked(level_manager.unlocked)
+
+# ---------- T1.4 存档 ----------
+func _snapshot_game() -> Dictionary:
+	var cells: Array = []
+	for c in grid.all_cells():
+		var states_arr: Array = []
+		for s in c.states.keys():
+			states_arr.append([int(s), int(c.states[s])])
+		var pillar_data = null
+		if c.pillar != null:
+			pillar_data = {"card": c.pillar.card.id, "life": c.pillar.life_remaining}
+		cells.append({
+			"x": c.coord.x, "y": c.coord.y,
+			"elem": c.element, "states": states_arr,
+			"placed": c.placed_at_turn, "decay": c.decay_timer,
+			"pillar": pillar_data,
+		})
+	var hand_ids: Array = []
+	for c in hand.hand:
+		hand_ids.append(c.id)
+	var draw_ids: Array = []
+	for c in hand.draw_pile:
+		draw_ids.append(c.id)
+	var disc_ids: Array = []
+	for c in hand.discard_pile:
+		disc_ids.append(c.id)
+	return {
+		"version": 1,
+		"level": level_manager.current_level,
+		"target": target,
+		"turn": turn,
+		"chain_total": chain_total,
+		"dead_turns": dead_turns,
+		"wind_dir": wind_dir,
+		"wind_speed": wind_speed,
+		"energy": energy.current,
+		"hand": hand_ids, "draw": draw_ids, "discard": disc_ids,
+		"cells": cells,
+	}
+
+func save_game(slot: int, slot_name: String) -> bool:
+	if grid == null or game_ended:
+		return false
+	return save_manager.save_slot(slot, slot_name, _snapshot_game())
+
+func load_game(slot: int) -> bool:
+	var snap = save_manager.load_slot(slot)
+	if typeof(snap) != TYPE_DICTIONARY or snap.is_empty():
+		return false
+	level_manager.current_level = int(snap.get("level", 0))
+	_prepare_card_defs(level_manager.current_level)
+	return _restore_snapshot(snap)
+
+func _restore_snapshot(snap: Dictionary) -> bool:
+	var cells: Array = snap.get("cells", [])
+	var w := 0
+	var h := 0
+	for ce in cells:
+		w = max(w, int(ce.get("x", 0)) + 1)
+		h = max(h, int(ce.get("y", 0)) + 1)
+	if w <= 0 or h <= 0:
+		return false
+	target = int(snap.get("target", 100))
+	grid = Grid.new(w, h)
+	var card_by_id: Dictionary = {}
+	for c in all_card_defs:
+		card_by_id[c.id] = c
+	pillars.clear()
+	for ce in cells:
+		var c = grid.get_cell(Vector2i(int(ce.get("x", 0)), int(ce.get("y", 0))))
+		if c == null:
+			continue
+		c.element = int(ce.get("elem", Element.NONE))
+		c.placed_at_turn = int(ce.get("placed", 0))
+		c.decay_timer = int(ce.get("decay", 0))
+		for st in ce.get("states", []):
+			c.add_state(int(st[0]), int(st[1]))
+		var pd = ce.get("pillar")
+		if pd != null:
+			var card = card_by_id.get(str(pd.get("card", "")), null)
+			if card != null:
+				var p = RulePillar.new(card, c.coord, turn)
+				p.life_remaining = int(pd.get("life", card.life))
+				c.pillar = p
+				pillars.append(p)
+	turn = int(snap.get("turn", 0))
+	chain_total = int(snap.get("chain_total", 0))
+	dead_turns = int(snap.get("dead_turns", 0))
+	wind_dir = int(snap.get("wind_dir", 0))
+	wind_speed = int(snap.get("wind_speed", 1))
+	energy = EnergySystem.new(3)
+	energy.current = int(snap.get("energy", 3))
+	hand = HandManager.new()
+	hand.fill_draw_pile(all_card_defs)
+	hand.hand = _ids_to_cards(snap.get("hand", []), card_by_id)
+	hand.draw_pile = _ids_to_cards(snap.get("draw", []), card_by_id)
+	hand.discard_pile = _ids_to_cards(snap.get("discard", []), card_by_id)
+	game_ended = false
+	phase = Phase.LAYOUT
+	state_changed.emit()
+	return true
+
+func _ids_to_cards(ids: Array, card_by_id: Dictionary) -> Array:
+	var out: Array = []
+	for id in ids:
+		var c = card_by_id.get(str(id), null)
+		if c != null:
+			out.append(c)
+	return out
 
 func _load_rules() -> Array:
 	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
@@ -152,14 +283,14 @@ func remove_pillar(coord: Vector2i) -> bool:
 	state_changed.emit()
 	return true
 
-func execute() -> void:
+func execute(speed: float = 1.0) -> void:
 	if phase != Phase.LAYOUT or game_ended:
 		return
 	phase = Phase.EVOLVE
 	state_changed.emit()
 	var runner = ChainReaction.new()
 	runner.reaction_applied.connect(_on_reaction)
-	var gained = await runner.execute_async(grid, pillars, 0.1)
+	var gained = await runner.execute_async(grid, pillars, 0.1, speed)
 	runner.reaction_applied.disconnect(_on_reaction)
 	chain_total += gained
 	if gained == 0:
@@ -191,8 +322,8 @@ func end_turn() -> void:
 	state_changed.emit()
 
 func _reroll_wind() -> void:
-	wind_dir = randi() % 4
-	wind_speed = randi() % 3 + 1
+	wind_dir = _randi(4)
+	wind_speed = _randi(3) + 1
 
 func push_dust() -> void:
 	var dir_vec = DIR_VECTORS[wind_dir]
@@ -272,8 +403,8 @@ func _world_rules() -> void:
 			empty.append(c)
 	var count = min(2, empty.size())
 	for _i in range(count):
-		var c = empty.pop_at(randi() % empty.size())
-		c.element = Element.WATER if randi() % 2 == 0 else Element.STONE
+		var c = empty.pop_at(_randi(empty.size()))
+		c.element = Element.WATER if _randi(2) == 0 else Element.STONE
 		c.placed_at_turn = turn
 	# 4. 燃烧蔓延: 植物相邻熔岩→点燃; 燃烧蔓延相邻植物
 	for c in grid.all_cells():
@@ -319,7 +450,7 @@ func _world_rules() -> void:
 		if not c.has_state(State.SNOW):
 			sn_cells.append(c)
 	for _i in range(min(2, sn_cells.size())):
-		sn_cells.pop_at(randi() % sn_cells.size()).add_state(State.SNOW, 2)
+		sn_cells.pop_at(_randi(sn_cells.size())).add_state(State.SNOW, 2)
 	# 8. 雪化冰: SNOW+水→冰
 	for c in grid.all_cells():
 		if c.has_state(State.SNOW) and c.element == Element.WATER:
@@ -335,24 +466,24 @@ func _world_rules() -> void:
 					break
 	# 天灾事件 (仅第4关)
 	if level_manager.current_level == 3:
-		if randi() % 100 < 30:
-			var event = randi() % 3
+		if _randi(100) < 30:
+			var event = _randi(3)
 			if event == 0:  # 陨石
 				var cells = grid.all_cells()
-				var c = cells[randi() % cells.size()]
+				var c = cells[_randi(cells.size())]
 				c.element = Element.LAVA
 				c.add_state(State.METEOR_LAVA, 2)
 				c.placed_at_turn = turn
 			elif event == 1:  # 地震
 				var non_empty = grid.all_cells().filter(func(c2): return c2.element != Element.NONE)
 				for _i in range(min(2, non_empty.size())):
-					var sc = non_empty.pop_at(randi() % non_empty.size())
+					var sc = non_empty.pop_at(_randi(non_empty.size()))
 					sc.element = Element.NONE
 					sc.clear_states()
 			else:  # 火山喷发
 				var empties = grid.all_cells().filter(func(c2): return c2.element == Element.NONE)
 				if not empties.is_empty():
-					var c = empties[randi() % empties.size()]
+					var c = empties[_randi(empties.size())]
 					c.element = Element.LAVA
 					c.placed_at_turn = turn
 	# METEOR_LAVA 衰减→熔岩变岩石
