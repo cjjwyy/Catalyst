@@ -35,7 +35,7 @@ func apply(grid: Grid) -> void:
 				cell.add_state(card.add_state, card.add_state_turns)
 		RuleCard.Kind.MULTIPLY:
 			for n in grid.neighbors(target_coord):
-				if n.element == Element.NONE:
+				if n.element == Element.NONE and not n.has_state(State.FROZEN):
 					n.element = card.result_element
 					n.placed_at_turn = grid.get_cell(target_coord).placed_at_turn + 1
 					affected.append(n.coord)

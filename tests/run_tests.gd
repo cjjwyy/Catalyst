@@ -32,6 +32,7 @@ static func run_all() -> bool:
 	ok = ok and _test_melt()
 	ok = ok and _test_snow_to_ice()
 	ok = ok and _test_frozen_blocks()
+	ok = ok and _test_frozen_blocks_multiply_target()
 	ok = ok and _test_bless_bonus()
 	ok = ok and _test_meteor_strike()
 	ok = ok and _test_meteor_event()
@@ -638,6 +639,29 @@ static func _test_frozen_blocks() -> bool:
 	assert(g.get_cell(Vector2i(3,2)).element == Element.STEAM, "STEAM untouched")
 	assert(chain == 0, "FROZEN block should yield 0 chain, got %d" % chain)
 	print("test_frozen_blocks OK (chain=%d)" % chain)
+	return true
+
+static func _test_frozen_blocks_multiply_target() -> bool:
+	# T3.1: FROZEN 空格不得被 MULTIPLY 当作扩散目标, 但其他空格正常扩散
+	var g = Grid.new(6, 6)
+	_put(g, 2, 2, Element.ICE)
+	_put(g, 3, 2, Element.ICE)
+	_put(g, 2, 3, Element.NONE)
+	g.get_cell(Vector2i(2, 3)).add_state(State.FROZEN, 3)
+	var card = _make_card({
+		"id":"freeze","name":"结冰","kind":"MULTIPLY",
+		"trigger_element":"ICE","contact_element":"ICE",
+		"result_element":"ICE","radius":2,"life":4
+	})
+	var p = RulePillar.new(card, Vector2i(2, 2), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [p])
+	var target = g.get_cell(Vector2i(2, 3))
+	assert(target.element == Element.NONE, "FROZEN empty target should stay NONE, got %d" % target.element)
+	assert(target.has_state(State.FROZEN), "FROZEN state should remain on skipped target")
+	assert(g.count_element(Element.ICE) >= 3, "other empty neighbours should still receive ICE")
+	assert(chain >= 1, "MULTIPLY should still tick chain via non-frozen targets, got %d" % chain)
+	print("test_frozen_blocks_multiply_target OK (chain=%d)" % chain)
 	return true
 
 static func _test_bless_bonus() -> bool:

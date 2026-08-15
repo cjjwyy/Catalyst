@@ -71,7 +71,7 @@ func _initialize() -> void:
 		["TC-26b", "半径扫描边界格数", tc26b_半径边界格数],
 		["TC-28a", "催化剂尘越界消失", tc28a_尘越界消失],
 		["TC-28b", "演化后清空选中", tc28b_演化后清空选中],
-		["TC-30a", "FROZEN阻断作用范围现状", tc30a_frozen阻断现状],
+		["TC-30a", "FROZEN阻断作用范围", tc30a_frozen阻断],
 		["TC-30b", "MULTIPLY时间戳语义现状", tc30b_multiply时间戳],
 		["TC-30c", "演化中切换场景健壮性", tc30c_演化中切场景],
 	]
@@ -982,8 +982,8 @@ func tc28b_演化后清空选中() -> void:
 	_check(_gm.phase == GameManager.Phase.LAYOUT, "演化未在 5s 内结束: phase=%d" % _gm.phase)
 	_check(renderer.selected_card_idx == -1, "演化结束后 selected_card_idx=%d, 期望 -1" % renderer.selected_card_idx)
 	main.free()
-# ---------- TC-30a (现状记录) ----------
-func tc30a_frozen阻断现状() -> void:
+# ---------- TC-30a ----------
+func tc30a_frozen阻断() -> void:
 	# 1) FROZEN 目标格不被转化
 	var g = Grid.new(6, 6)
 	_put(g, 1, 1, Element.ICE)
@@ -995,15 +995,22 @@ func tc30a_frozen阻断现状() -> void:
 	var chain = runner.execute(g, [_pillar(card, 1, 1)])
 	_check(g.get_cell(Vector2i(1, 1)).element == Element.ICE, "FROZEN 格元素被改变 (Reaction.gd:18 应阻止转化)")
 	_check(g.get_cell(Vector2i(1, 1)).has_state(State.FROZEN), "FROZEN 状态被清除")
-	# 2) FROZEN 空格作为 MULTIPLY 扩散目标仍被填充 (现状记录)
+	# 2) FROZEN 空格作为 MULTIPLY 扩散目标不得被填充 (T3.1 语义统一)
 	var g2 = Grid.new(6, 6)
 	_put(g2, 1, 1, Element.ICE)
 	_put(g2, 2, 1, Element.ICE)
 	_put(g2, 1, 2, Element.NONE)
 	g2.get_cell(Vector2i(1, 2)).add_state(State.FROZEN, 3)
 	var chain2 = runner.execute(g2, [_pillar(card, 1, 1)])
-	_check(g2.get_cell(Vector2i(1, 2)).element == Element.ICE,
-		"FROZEN 空格未被 MULTIPLY 填充 —— 现状记录: FROZEN 仅挡 trigger 格, 不挡扩散目标 (React 判定差异, 修复后更新断言)")
+	var frozen_target = g2.get_cell(Vector2i(1, 2))
+	_check(frozen_target.element == Element.NONE,
+		"FROZEN 空格被 MULTIPLY 填充为 %d, 期望保持 NONE (T3.1)" % frozen_target.element)
+	_check(frozen_target.has_state(State.FROZEN), "FROZEN 空格状态被清除 (T3.1)")
+	var new_ice := 0
+	for c in g2.all_cells():
+		if c.element == Element.ICE:
+			new_ice += 1
+	_check(new_ice >= 3, "对照场景 ICE 总数=%d, 期望 >=3 (其他非冻结空格仍可扩散)" % new_ice)
 	_check(chain2 >= 1, "对照场景连锁=%d, 期望 >=1" % chain2)
 
 # ---------- TC-30b (现状记录) ----------

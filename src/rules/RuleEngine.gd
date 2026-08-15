@@ -73,6 +73,12 @@ func _match_cell(grid: Grid, card: RuleCard, c: Cell, scope: Array) -> bool:
 				break
 		if not found:
 			return false
+	if card.kind == RuleCard.Kind.MULTIPLY:
+		# T3.1: 触发格至少有一个可用的非冻结空格, 才产生 reaction, 避免空反应
+		for n in grid.neighbors(c.coord):
+			if n.element == Element.NONE and not n.has_state(State.FROZEN):
+				return true
+		return false
 	return true
 
 func _compute_components(grid: Grid) -> Dictionary:
