@@ -1,6 +1,7 @@
 extends RefCounted
 
 class_name CatalystTests
+const SoundManagerScript = preload("res://src/ui/SoundManager.gd")
 
 static func run_all() -> bool:
 	var ok = true
@@ -37,6 +38,7 @@ static func run_all() -> bool:
 	ok = ok and _test_meteor_strike()
 	ok = ok and _test_meteor_event()
 	ok = ok and _test_disaster_earthquake()
+	ok = ok and _test_sound_synthesis()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -721,6 +723,20 @@ static func _test_meteor_event() -> bool:
 		c.was_meteor = false
 	assert(g.get_cell(Vector2i(2,2)).element == Element.STONE, "meteor lava should become stone")
 	print("test_meteor_event OK")
+	return true
+
+
+static func _test_sound_synthesis() -> bool:
+	# T3.3: 音效为程序合成占位, 不依赖音频设备, 只验证数据与音高曲线
+	var sm: Node = SoundManagerScript.new()
+	var stream: AudioStreamWAV = sm.make_tone(523.0, 0.04)
+	assert(stream != null, "should generate AudioStreamWAV")
+	assert(stream.data.size() > 0, "tone data should not be empty")
+	assert(stream.mix_rate == 22050, "tone sample rate should be 22050")
+	assert(absf(sm.pitch_for_chain(1) - 1.0) < 0.001, "chain=1 pitch should be 1.0")
+	assert(sm.pitch_for_chain(100) > sm.pitch_for_chain(10), "pitch should rise with chain")
+	sm.free()
+	print("test_sound_synthesis OK")
 	return true
 
 static func _test_disaster_earthquake() -> bool:

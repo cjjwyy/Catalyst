@@ -224,6 +224,11 @@ func tc05_主要按钮键盘可聚焦() -> void:
 		_check(btn != null, "场景缺少按钮节点 %s" % path)
 		if btn != null:
 			_check(btn.focus_mode != Control.FOCUS_NONE, "按钮 %s focus_mode=%d, 期望非 NONE (Tab 可聚焦)" % [path, btn.focus_mode])
+	# T3.3: 音效层应在 Main 场景内存在(程序合成占位)
+	var sound = main.get_node_or_null("SoundManager")
+	_check(sound != null, "Main 场景缺少 SoundManager (T3.3 音效层)")
+	if sound != null:
+		_check(sound.get_node_or_null("ChainTone") != null, "SoundManager 缺少 ChainTone AudioStreamPlayer")
 	main.free()
 
 # ---------- TC-06 ----------
