@@ -379,7 +379,7 @@ func execute(speed: float = 1.0) -> void:
 	runner.cancelled = false
 	_running_runner = runner
 	runner.reaction_applied.connect(_on_reaction)
-	var gained = await runner.execute_async(grid, pillars, 0.1, speed, rng)
+	var gained = await runner.execute_async(grid, pillars, 0.1, speed, turn, rng)
 	if runner.reaction_applied.is_connected(_on_reaction):
 		runner.reaction_applied.disconnect(_on_reaction)
 	if serial != _evolution_serial or runner.cancelled:

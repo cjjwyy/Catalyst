@@ -12,7 +12,8 @@ func _init(c: RuleCard = null, a: Vector2i = Vector2i.ZERO, t: Vector2i = Vector
 	anchor = a
 	target_coord = t
 
-func apply(grid: Grid) -> void:
+# T3.2: turn 为当前回合; 反应产生/改变的元素统一写入当前回合, 供世界规则正确计时。
+func apply(grid: Grid, turn: int = 0) -> void:
 	affected.clear()
 	var cell = grid.get_cell(target_coord)
 	if cell == null or card == null or cell.has_state(State.FROZEN):
@@ -22,6 +23,7 @@ func apply(grid: Grid) -> void:
 			var _old_elem = cell.element
 			cell.element = card.result_element
 			cell.clear_states()
+			cell.placed_at_turn = turn
 			affected.append(target_coord)
 			if card.contact_element != Element.NONE:
 				# 在锚定范围内找第一个匹配 contact_element 的格子替换之
@@ -30,6 +32,7 @@ func apply(grid: Grid) -> void:
 						continue
 					if n.element == card.contact_element:
 						n.element = card.self_replace
+						n.placed_at_turn = turn
 						affected.append(n.coord)
 			if card.add_state != State.NONE and card.add_state_turns > 0:
 				cell.add_state(card.add_state, card.add_state_turns)
@@ -37,7 +40,7 @@ func apply(grid: Grid) -> void:
 			for n in grid.neighbors(target_coord):
 				if n.element == Element.NONE and not n.has_state(State.FROZEN):
 					n.element = card.result_element
-					n.placed_at_turn = grid.get_cell(target_coord).placed_at_turn + 1
+					n.placed_at_turn = turn
 					affected.append(n.coord)
 		RuleCard.Kind.EXTINCTION:
 			# 灭绝事件: 半径内 trigger_element 数 >= threshold 时,
@@ -53,10 +56,12 @@ func apply(grid: Grid) -> void:
 				for c in candidates:
 					c.element = Element.NONE
 					c.clear_states()
+					c.placed_at_turn = turn
 					affected.append(c.coord)
 				if card.also_clear != Element.NONE:
 					for c in scope:
 						if c.element == card.also_clear:
 							c.element = Element.NONE
 							c.clear_states()
+							c.placed_at_turn = turn
 							affected.append(c.coord)

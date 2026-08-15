@@ -86,11 +86,12 @@ static func _test_multiply_basic() -> bool:
 	var out = engine.evaluate(g, [pillar])
 	assert(out.size() >= 1, "MULTIPLY should yield Reaction")
 	for r in out:
-		r.apply(g)
+		r.apply(g, 4)
 	var planted = 0
 	for n in g.neighbors(Vector2i(1,1)):
 		if n.element == Element.PLANT:
 			planted += 1
+			assert(n.placed_at_turn == 4, "MULTIPLY new cell should use current turn 4, got %d" % n.placed_at_turn)
 	assert(planted >= 1, "should spread >=1 plant to neighbor")
 	print("test_multiply_basic OK")
 	return true

@@ -9,7 +9,7 @@ var cancelled: bool = false  # T2.5: 由 GameManager 在 start_game 时置位, �
 
 # 同步执行连锁,返回累计连锁数。reaction_applied 每次触发一个 Reaction 都会发出。
 # rng: 可选随机源; GameManager 传入可播种的 GameManager.rng, 使催化剂尘播撒确定化(测试基准可复现)。
-func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> int:
+func execute(grid: Grid, pillars: Array, turn: int = 0, rng: RandomNumberGenerator = null) -> int:
 	var engine = RuleEngine.new()
 	var chain = 0
 	var changed: Array = []
@@ -34,7 +34,7 @@ func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> i
 			for cc in grid.all_cells():
 				if cc.has_state(State.BLESSED):
 					blessed_before[cc.coord] = true
-			r.apply(grid)
+			r.apply(grid, turn)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:
@@ -75,9 +75,9 @@ func _spawn_dust(grid: Grid, rng: RandomNumberGenerator) -> void:
 
 # 异步执行,每次 Reaction 之间等待 frame_delay,供 UI 演示
 # speed: 动画倍速(>0), <=0 表示跳过动画, 同步结算(仍逐条发 reaction_applied)
-func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: float = 1.0, rng: RandomNumberGenerator = null) -> int:
+func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: float = 1.0, turn: int = 0, rng: RandomNumberGenerator = null) -> int:
 	if speed <= 0.0:
-		return execute(grid, pillars, rng)
+		return execute(grid, pillars, turn, rng)
 	var engine = RuleEngine.new()
 	var chain = 0
 	var changed: Array = []
@@ -100,7 +100,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 			for cc in grid.all_cells():
 				if cc.has_state(State.BLESSED):
 					blessed_before[cc.coord] = true
-			r.apply(grid)
+			r.apply(grid, turn)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:

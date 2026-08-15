@@ -72,7 +72,7 @@ func _initialize() -> void:
 		["TC-28a", "催化剂尘越界消失", tc28a_尘越界消失],
 		["TC-28b", "演化后清空选中", tc28b_演化后清空选中],
 		["TC-30a", "FROZEN阻断作用范围", tc30a_frozen阻断],
-		["TC-30b", "MULTIPLY时间戳语义现状", tc30b_multiply时间戳],
+		["TC-30b", "MULTIPLY时间戳语义", tc30b_multiply时间戳],
 		["TC-30c", "演化中切换场景健壮性", tc30c_演化中切场景],
 	]
 	for t in tests:
@@ -1013,7 +1013,7 @@ func tc30a_frozen阻断() -> void:
 	_check(new_ice >= 3, "对照场景 ICE 总数=%d, 期望 >=3 (其他非冻结空格仍可扩散)" % new_ice)
 	_check(chain2 >= 1, "对照场景连锁=%d, 期望 >=1" % chain2)
 
-# ---------- TC-30b (现状记录) ----------
+# ---------- TC-30b ----------
 func tc30b_multiply时间戳() -> void:
 	var g = Grid.new(6, 6)
 	_put(g, 1, 1, Element.PLANT)
@@ -1021,10 +1021,11 @@ func tc30b_multiply时间戳() -> void:
 	var card = _make_rule_card({"id": "grow", "kind": "MULTIPLY", "trigger_element": "PLANT",
 		"contact_element": "STEAM", "result_element": "PLANT", "radius": 2, "life": 4})
 	var runner = load("res://src/rules/ChainReaction.gd").new()
-	runner.execute(g, [_pillar(card, 1, 1)])
+	var current_turn := 7
+	runner.execute(g, [_pillar(card, 1, 1)], current_turn)
 	var new_plant = g.get_cell(Vector2i(0, 1))
 	_check(new_plant.element == Element.PLANT, "对照: 新格应为 PLANT")
-	_check(new_plant.placed_at_turn == 1, "新格 placed_at_turn=%d, 期望 1 (触发格 0 + 1) —— 现状记录: 非当前 turn, 语义偏差 (Reaction.gd:40), 修复后更新断言" % new_plant.placed_at_turn)
+	_check(new_plant.placed_at_turn == current_turn, "新格 placed_at_turn=%d, 期望当前回合 %d (T3.2)" % [new_plant.placed_at_turn, current_turn])
 
 # ---------- TC-30c ----------
 func tc30c_演化中切场景() -> void:
