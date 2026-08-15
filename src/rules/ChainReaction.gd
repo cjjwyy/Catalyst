@@ -5,6 +5,8 @@ const MAX = 1000
 
 signal reaction_applied(reaction)
 
+var cancelled: bool = false  # T2.5: 由 GameManager 在 start_game 时置位, 中止旧演化协程
+
 # 同步执行连锁,返回累计连锁数。reaction_applied 每次触发一个 Reaction 都会发出。
 # rng: 可选随机源; GameManager 传入可播种的 GameManager.rng, 使催化剂尘播撒确定化(测试基准可复现)。
 func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> int:
@@ -18,7 +20,7 @@ func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> i
 	# 避免 grow/extinct oscillation 无限刷连锁。
 	var seen: Dictionary = {}
 	var reactions = engine.evaluate_restricted(grid, pillars, changed)
-	while not reactions.is_empty() and chain < MAX:
+	while not reactions.is_empty() and chain < MAX and not cancelled:
 		var snap := _snapshot(grid)
 		if seen.has(snap):
 			break
@@ -26,6 +28,8 @@ func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> i
 		var new_changed: Array = []
 		var any_effect = false
 		for r in reactions:
+			if cancelled:
+				return chain
 			var blessed_before: Dictionary = {}
 			for cc in grid.all_cells():
 				if cc.has_state(State.BLESSED):
@@ -82,7 +86,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 
 	var seen: Dictionary = {}
 	var reactions = engine.evaluate_restricted(grid, pillars, changed)
-	while not reactions.is_empty() and chain < MAX:
+	while not reactions.is_empty() and chain < MAX and not cancelled:
 		var snap := _snapshot(grid)
 		if seen.has(snap):
 			break
@@ -90,6 +94,8 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 		var new_changed: Array = []
 		var any_effect = false
 		for r in reactions:
+			if cancelled:
+				return chain
 			var blessed_before: Dictionary = {}
 			for cc in grid.all_cells():
 				if cc.has_state(State.BLESSED):
@@ -111,6 +117,8 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 				await Engine.get_main_loop().process_frame
 				if frame_delay > 0.0:
 					await Engine.get_main_loop().create_timer(frame_delay / speed).timeout
+				if cancelled:
+					return chain
 		if not any_effect:
 			break
 		reactions = engine.evaluate_restricted(grid, pillars, new_changed)

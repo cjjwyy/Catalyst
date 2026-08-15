@@ -1037,15 +1037,21 @@ func tc30c_演化中切场景() -> void:
 	var p = _pillar(card, 4, 4)
 	_gm.pillars.append(p)
 	_gm.grid.get_cell(p.coord).pillar = p
-	# 启动演化(不等待完成), 期间切场景
-	var running = _gm.execute()
+	# 启动演化(不等待完成), 期间切场景并重开新局
+	_gm.execute()
 	await self.create_timer(0.3).timeout
+	var old_runner = _gm._running_runner
+	_check(old_runner != null and not old_runner.cancelled, "演化启动后应有未取消的 runner (T2.5)")
 	main.queue_free()
 	root.remove_child(main)
 	change_scene_to_file(LEVEL_SELECT_SCENE)
-	await self.create_timer(1.5).timeout
-	_check(running != null, "演化协程未启动")
-	_check(_gm.chain_total > 0, "切场景后旧演化未完成: chain_total=%d, 期望 >0 (协程不应因 UI 释放而中止)" % _gm.chain_total)
-	_gm.start_game(0)
+	await self.create_timer(0.2).timeout
+	_gm.start_game(0)  # 新局必须中止旧演化
+	_check(old_runner != null and old_runner.cancelled, "start_game 未取消旧演化 runner (T2.5)")
+	_check(_gm._running_runner == null, "start_game 后 _running_runner 应清空")
 	_check(_gm.chain_total == 0 and _gm.pillars.is_empty() and _gm.hand.hand_size() == 5 and _gm.dead_turns == 0,
 		"切场景后新局状态不干净: chain=%d pillars=%d hand=%d dead=%d" % [_gm.chain_total, _gm.pillars.size(), _gm.hand.hand_size(), _gm.dead_turns])
+	# 再等旧协程应自然退出, 不得把旧连锁写回新局
+	await self.create_timer(1.5).timeout
+	_check(_gm.chain_total == 0 and _gm.phase == GameManager.Phase.LAYOUT,
+		"旧演化在新局中继续污染状态: chain=%d phase=%d (T2.5)" % [_gm.chain_total, _gm.phase])

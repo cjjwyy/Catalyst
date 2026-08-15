@@ -36,6 +36,8 @@ var all_card_defs: Array = []
 var save_manager: SaveManager = SaveManager.new()
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确定性: 游戏逻辑随机源, 可播种(种子化 T3.8 的前置)
 var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
+var _running_runner = null  # T2.5: 当前演化 runner; start_game/load_game 置 cancelled 并清空
+var _evolution_serial: int = 0  # T2.5: 演化代数; 旧协程完成时若代数不匹配则不写回
 
 signal state_changed
 signal reaction_applied(reaction)
@@ -73,12 +75,14 @@ func _prepare_card_defs(lvl_idx: int) -> Array:
 	return all_card_defs
 
 func start_game(level_idx: int = -1) -> void:
+	_cancel_evolution()  # T2.5: 新局开工前先中止旧演化, 防止旧协程写回新网格
 	if level_idx >= 0:
 		level_manager.current_level = level_idx
 	var lvl = level_manager.get_current()
 	target = clampi(int(lvl.get("target", 100)), 1, 99999)
 	_prepare_card_defs(level_manager.current_level)
 	grid = _load_level(lvl.path)
+	pillars.clear()  # T2.5: 新网格必须搭配空柱数组, 旧演化/旧局柱子不得残留
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
 	hand.refill_to(5)
@@ -93,6 +97,12 @@ func start_game(level_idx: int = -1) -> void:
 		phase = Phase.EVOLVE
 	_reroll_wind()
 	state_changed.emit()
+
+func _cancel_evolution() -> void:
+	_evolution_serial += 1
+	if _running_runner != null:
+		_running_runner.cancelled = true
+	_running_runner = null
 
 # T1.4: 由 Main 调用 —— 若无进行中的局则按当前关卡开局(支持读档后跳过重开)
 func ensure_game_started() -> void:
@@ -147,6 +157,7 @@ func save_game(slot: int, slot_name: String) -> bool:
 	return save_manager.save_slot(slot, slot_name, _snapshot_game())
 
 func load_game(slot: int) -> bool:
+	_cancel_evolution()  # T2.5: 读档也会替换网格, 同样需要中止旧演化
 	var snap = save_manager.load_slot(slot)
 	if typeof(snap) != TYPE_DICTIONARY or snap.is_empty():
 		return false
@@ -360,12 +371,21 @@ func remove_pillar(coord: Vector2i) -> bool:
 func execute(speed: float = 1.0) -> void:
 	if phase != Phase.LAYOUT or game_ended:
 		return
+	_evolution_serial += 1
+	var serial := _evolution_serial
 	phase = Phase.EVOLVE
 	state_changed.emit()
 	var runner = ChainReaction.new()
+	runner.cancelled = false
+	_running_runner = runner
 	runner.reaction_applied.connect(_on_reaction)
 	var gained = await runner.execute_async(grid, pillars, 0.1, speed, rng)
-	runner.reaction_applied.disconnect(_on_reaction)
+	if runner.reaction_applied.is_connected(_on_reaction):
+		runner.reaction_applied.disconnect(_on_reaction)
+	if serial != _evolution_serial or runner.cancelled:
+		return  # T2.5: 旧演化已被 start_game/load_game 取消, 结果作废
+	if _running_runner == runner:
+		_running_runner = null
 	chain_total += gained
 	if gained == 0:
 		dead_turns += 1
