@@ -107,12 +107,15 @@ func _on_cell_clicked(coord: Vector2i) -> void:
 		grid_renderer.select_card(-1)
 
 func _on_execute() -> void:
+	grid_renderer.select_card(-1)  # T2.2: 演化后不得残留选中, 防止误点网格误打旧索引手牌
 	GameManager.execute()
 
 func _on_speed() -> void:
+	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	GameManager.execute(4.0)  # T1.3: 4x 加速
 
 func _on_skip() -> void:
+	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	GameManager.execute(0.0)  # T1.3: 跳过动画, 同步结算
 
 func _on_reaction(_r) -> void:

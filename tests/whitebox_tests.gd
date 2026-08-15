@@ -70,7 +70,7 @@ func _initialize() -> void:
 		["TC-26a", "界外点击与越界坐标", tc26a_界外点击],
 		["TC-26b", "半径扫描边界格数", tc26b_半径边界格数],
 		["TC-28a", "催化剂尘越界消失", tc28a_尘越界消失],
-		["TC-28b", "演化后残留选中现状", tc28b_残留选中现状],
+		["TC-28b", "演化后清空选中", tc28b_演化后清空选中],
 		["TC-30a", "FROZEN阻断作用范围现状", tc30a_frozen阻断现状],
 		["TC-30b", "MULTIPLY时间戳语义现状", tc30b_multiply时间戳],
 		["TC-30c", "演化中切换场景健壮性", tc30c_演化中切场景],
@@ -914,12 +914,13 @@ func tc28a_尘越界消失() -> void:
 			total += 1
 	_check(total == 0, "越界吹走后全网格残留 DUST %d 格, 期望 0" % total)
 
-# ---------- TC-28b (现状记录) ----------
-func tc28b_残留选中现状() -> void:
+# ---------- TC-28b ----------
+func tc28b_演化后清空选中() -> void:
 	_gm.start_game(0)
-	var renderer = load(GRID_RENDERER_SCRIPT).new()
-	renderer.set_grid(_gm.grid)
-	renderer.GameManager = _gm
+	var main = load(MAIN_SCENE).instantiate()
+	root.add_child(main)
+	await self.process_frame
+	var renderer = main.grid_renderer
 	var spot := Vector2i(-1, -1)
 	for c in _gm.grid.all_cells():
 		if c.element == Element.NONE and c.pillar == null:
@@ -927,13 +928,20 @@ func tc28b_残留选中现状() -> void:
 			break
 	_check(spot.x >= 0, "未找到空格")
 	if spot.x < 0:
+		main.free()
 		return
 	renderer.select_card(0)
 	_check(renderer.selected_card_idx == 0, "select_card(0) 后 idx=%d, 期望 0" % renderer.selected_card_idx)
 	_check(_gm.play_card(0, spot), "落柱失败")
-	await _gm.execute()
-	_check(renderer.selected_card_idx == 0, "演化后 selected_card_idx=%d, 期望 0 —— 现状记录: 演化后未重置, 直接点网格会以旧索引误打手牌[0] 并耗能量 (缺陷, 修复后应==-1, 届时更新断言)" % renderer.selected_card_idx)
-
+	main._on_execute()  # 实际 UI 路径: 执行按钮 → 先清空选中, 再启动演化
+	_check(renderer.selected_card_idx == -1, "点击执行后 selected_card_idx=%d, 期望 -1 (T2.2: 演化后不得残留手牌选中)" % renderer.selected_card_idx)
+	var guard := 0
+	while _gm.phase == GameManager.Phase.EVOLVE and guard < 100:
+		await self.create_timer(0.05).timeout
+		guard += 1
+	_check(_gm.phase == GameManager.Phase.LAYOUT, "演化未在 5s 内结束: phase=%d" % _gm.phase)
+	_check(renderer.selected_card_idx == -1, "演化结束后 selected_card_idx=%d, 期望 -1" % renderer.selected_card_idx)
+	main.free()
 # ---------- TC-30a (现状记录) ----------
 func tc30a_frozen阻断现状() -> void:
 	# 1) FROZEN 目标格不被转化
