@@ -2,6 +2,8 @@
   "name": "丛林·生长",
   "size": [12, 12],
   "target": 300,
+  "chaos_elements": ["WATER", "STONE", "EARTH", "STEAM", "LAVA", "PLANT"],
+  
   "elements": [
     {"coord": [1, 1], "element": "WATER"},
     {"coord": [2, 1], "element": "WATER"},

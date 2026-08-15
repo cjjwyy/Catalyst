@@ -14,7 +14,7 @@ const DIR_VECTORS = [
 	Vector2i(-1, 0),   # 3=W
 ]
 const DIR_CHARS = ["^", ">", "v", "<"]
-const CHAOS_ELEMENTS = [Element.WATER, Element.STONE, Element.EARTH, Element.STEAM, Element.LAVA, Element.PLANT]
+const DEFAULT_CHAOS_ELEMENTS = [Element.WATER, Element.STONE, Element.EARTH, Element.STEAM, Element.LAVA, Element.PLANT]
 const CHAOS_NAME = {Element.WATER:"水",Element.STONE:"岩",Element.EARTH:"土",Element.STEAM:"汽",Element.LAVA:"熔",Element.PLANT:"植"}
 
 var phase: int = Phase.LAYOUT
@@ -26,6 +26,7 @@ var wind_speed: int = 1
 var turn: int = 0
 var chain_total: int = 0
 var dead_turns: int = 0
+var chaos_elements: Array = DEFAULT_CHAOS_ELEMENTS.duplicate()
 
 var grid: Grid
 var pillars: Array = []
@@ -223,6 +224,7 @@ func _load_rules() -> Array:
 	return out
 
 func _load_level(path: String) -> Grid:
+	chaos_elements = DEFAULT_CHAOS_ELEMENTS.duplicate()
 	var f = FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		push_warning("无法打开 %s,使用默认 6x6" % path)
@@ -232,6 +234,7 @@ func _load_level(path: String) -> Grid:
 	var data = JSON.parse_string(txt)
 	if typeof(data) != TYPE_DICTIONARY:
 		return Grid.new(6, 6)
+	_parse_chaos_elements(data)
 	var size = data.get("size", [6, 6])
 	var g = Grid.new(int(size[0]), int(size[1]))
 	var elems = data.get("elements", [])
@@ -243,6 +246,18 @@ func _load_level(path: String) -> Grid:
 		c.element = Element.from_string(entry["element"])
 		c.placed_at_turn = 0
 	return g
+
+func _parse_chaos_elements(data: Dictionary) -> void:
+	var raw = data.get("chaos_elements", [])
+	if typeof(raw) != TYPE_ARRAY or raw.is_empty():
+		chaos_elements = DEFAULT_CHAOS_ELEMENTS.duplicate()
+		return
+	var out: Array = []
+	for item in raw:
+		var elem = Element.from_string(str(item))
+		if elem != Element.NONE and not out.has(elem):
+			out.append(elem)
+	chaos_elements = out if not out.is_empty() else DEFAULT_CHAOS_ELEMENTS.duplicate()
 
 func can_play_card() -> bool:
 	return not game_ended and phase == Phase.LAYOUT and energy.can_play() and hand.hand_size() > 0
@@ -290,7 +305,7 @@ func execute(speed: float = 1.0) -> void:
 	state_changed.emit()
 	var runner = ChainReaction.new()
 	runner.reaction_applied.connect(_on_reaction)
-	var gained = await runner.execute_async(grid, pillars, 0.1, speed)
+	var gained = await runner.execute_async(grid, pillars, 0.1, speed, rng)
 	runner.reaction_applied.disconnect(_on_reaction)
 	chain_total += gained
 	if gained == 0:
@@ -355,8 +370,13 @@ func push_dust() -> void:
 			dst_cell.add_state(State.DUST, max(exist, turns_left))
 
 func chaos_check() -> void:
+	if grid == null:
+		return
 	var total = grid.w * grid.h
-	for elem in CHAOS_ELEMENTS:
+	var check_elems: Array = chaos_elements
+	if check_elems.is_empty():
+		check_elems = DEFAULT_CHAOS_ELEMENTS
+	for elem in check_elems:
 		var n = grid.count_element(elem)
 		if n > total / 2:
 			var ext_pillar = null
@@ -371,6 +391,8 @@ func chaos_check() -> void:
 						c.clear_states()
 				return
 			else:
+				game_ended = true
+				phase = Phase.EVOLVE
 				game_over.emit(false, "混沌失控 — %s 超过 50%%" % CHAOS_NAME.get(elem,"??"))
 				return
 

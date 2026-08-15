@@ -2,6 +2,8 @@
   "name": "火山口·终局",
   "size": [16, 16],
   "target": 1500,
+  "chaos_elements": ["WATER", "STONE", "EARTH", "STEAM", "LAVA", "PLANT"],
+  
   "elements": [
     {"coord": [2, 2], "element": "LAVA"},
     {"coord": [3, 2], "element": "LAVA"},

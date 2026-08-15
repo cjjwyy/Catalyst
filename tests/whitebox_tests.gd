@@ -33,6 +33,9 @@ func _initialize() -> void:
 	if _gm == null:
 		_gm = load("res://src/main/GameManager.gd").new()
 		root.add_child(_gm)
+	# --script 模式下 autoload 的 _ready(含核心自检 rng.randomize())可能在首帧才执行;
+	# 先等一帧, 保证后续定种测试不会被 _ready 的 randomize() 覆盖。
+	await self.process_frame
 
 	var tests := [
 		["TC-01", "关卡选择页可打开", tc01_关卡选择页可打开],
@@ -225,22 +228,23 @@ func tc05_主要按钮键盘可聚焦() -> void:
 
 # ---------- TC-06 ----------
 func tc06_第1关贪心可通关() -> void:
-	seed(20240812)              # 手牌洗牌/催化剂尘(pick_random/shuffle 流)
-	_gm.rng.seed = 20240812     # T1.2: 世界规则/风(游戏逻辑 rng 流) —— 双流定种, 轨迹完全确定
+	# T2.1: 牌池新增「干涸」后重新标定固定种子; 白盒启动时已等待 autoload _ready, 双流定种轨迹完全确定。
+	seed(20240816)              # 手牌洗牌/催化剂尘(保留的全局随机流)
+	_gm.rng.seed = 20240816     # 世界规则/风/催化剂尘(GameManager.rng)
 	_gm.start_game(0)
 	for turn in range(20):
 		var placed := 0
 		# T1.2: 手牌上限后手牌数小, 循环改为"每次重新扫描当前手牌", 避免 pop 后索引越界;
-		# 策略: 有限资源引擎(熔岩/矿/汽)优先, 之后走可持续的岩化→草生→草殖→灭绝循环
+		# 策略: 有限资源引擎(熔岩/矿/汽)优先, EXTINCTION 只在达到阈值时落柱, 避免空放浪费回合。
 		while placed < _gm.energy.current:
 			var played_any := false
-			var priority := ["steamify", "harvest", "grow", "extinct", "petrify", "grass_grow", "grass_spread"]
+			var priority := ["steamify", "harvest", "grow", "extinct", "drought", "petrify", "grass_grow", "grass_spread"]
 			for pid in priority:
 				for card_idx in range(_gm.hand.hand_size()):
 					var card: Resource = _gm.hand.hand[card_idx]
 					if card.id != pid:
 						continue
-					var spot := _find_pair_spot(card.trigger_element, card.contact_element)
+					var spot := _find_extinction_spot(card) if card.kind == RuleCard.Kind.EXTINCTION else _find_pair_spot(card.trigger_element, card.contact_element)
 					if spot.x >= 0 and _gm.play_card(card_idx, spot):
 						placed += 1
 						played_any = true
@@ -252,7 +256,7 @@ func tc06_第1关贪心可通关() -> void:
 			# 兜底: 打任意有触发位的牌(循环手牌)
 			for card_idx in range(_gm.hand.hand_size()):
 				var card2: Resource = _gm.hand.hand[card_idx]
-				var spot2 := _find_pair_spot(card2.trigger_element, card2.contact_element)
+				var spot2 := _find_extinction_spot(card2) if card2.kind == RuleCard.Kind.EXTINCTION else _find_pair_spot(card2.trigger_element, card2.contact_element)
 				if spot2.x >= 0 and _gm.play_card(card_idx, spot2):
 					placed += 1
 					played_any = true
@@ -304,9 +308,30 @@ func _find_pair_spot(trigger: int, contact: int) -> Vector2i:
 			best_coord = c.coord
 	return best_coord
 
+# EXTINCTION 专用选点: 只有半径内触发物(含 also_count)达到阈值才落柱, 优先选择数量最多的位置
+func _find_extinction_spot(card: Resource) -> Vector2i:
+	var best := -1
+	var best_coord := Vector2i(-1, -1)
+	for c in _gm.grid.all_cells():
+		if c.pillar != null:
+			continue
+		var count := 0
+		for n in _gm.grid.cells_in_radius(c.coord, card.radius):
+			if n.element == card.trigger_element or (card.also_count != Element.NONE and n.element == card.also_count):
+				count += 1
+		if count >= card.extinct_threshold and count > best:
+			best = count
+			best_coord = c.coord
+	return best_coord
+
 # ---------- TC-07 ----------
 func tc07_混沌即死水元素() -> void:
 	_gm.start_game(0)
+	var has_drought := false
+	for card in _gm.all_card_defs:
+		if card.id == "drought":
+			has_drought = card.kind == RuleCard.Kind.EXTINCTION and card.trigger_element == Element.WATER
+	_check(has_drought, "rules.json 中缺少「干涸」水元素 EXTINCTION 反制牌 (T2.1)")
 	_gm.pillars.clear()
 	var filled := 0
 	for c in _gm.grid.all_cells():
@@ -321,9 +346,10 @@ func tc07_混沌即死水元素() -> void:
 		_tc_got = true
 		_tc_msg = msg, CONNECT_ONE_SHOT)
 	_gm.chaos_check()
-	_check(_tc_got, "51格WATER(>50%)且无WATER灭绝柱时未触发 game_over —— GameManager.gd:226-244 混沌判定未生效")
+	_check(_tc_got, "51格WATER(>50%)且无WATER灭绝柱时未触发 game_over —— GameManager.chaos_check 混沌判定未生效")
 	_check(_tc_msg.contains("水"), "game_over 消息=%s, 期望含'水' (指明失控元素)" % _tc_msg)
-	_check(_gm.game_ended == false, "game_ended=%s (chaos_check 仅发信号, 由 Main 置位, 此处记录信号即达标)" % _gm.game_ended)
+	_check(_gm.game_ended == true, "game_ended=%s, 期望 true (混沌失控与死寂一样完成判负, T2.1)" % _gm.game_ended)
+	_check(_gm.phase == GameManager.Phase.EVOLVE, "phase=%d, 期望 EVOLVE(%d) (与死寂路径一致, T2.1)" % [_gm.phase, GameManager.Phase.EVOLVE])
 
 # ---------- TC-08 ----------
 func tc08_混沌灭绝柱化解() -> void:
@@ -700,13 +726,13 @@ func tc19_图例元素完整性() -> void:
 # ---------- TC-20 ----------
 func tc20_手牌区宽度容量() -> void:
 	_gm.start_game(0)
-	_check(_gm.all_card_defs.size() == 11, "第1关牌池=%d, 期望 11 (7基础 + 2xsteamify + 2xgrow)" % _gm.all_card_defs.size())
+	_check(_gm.all_card_defs.size() == 12, "第1关牌池=%d, 期望 12 (8基础含干涸 + 2xsteamify + 2xgrow)" % _gm.all_card_defs.size())
 	var w8 := 8 * 130 + 7 * 6
 	_check(w8 == 1082 and w8 <= 1100, "8张手牌(上限)宽=%d, 期望 1082<=1100 (卡面 130px/张, 可容纳)" % w8)
 	_gm.start_game(3)
-	_check(_gm.all_card_defs.size() == 13, "第4关牌池=%d, 期望 13 (level 过滤: 7基础+2祝福/陨石+2xsteamify+2xgrow; 孢子/冰卡仅出现于其专属关)" % _gm.all_card_defs.size())
-	var w17 := 13 * 130 + 12 * 6
-	_check(w17 > 1100, "13张牌池全展开宽=%d, 期望 >1100 —— 量化记录: 若无手牌上限(8)仍会溢出, 上限为必要约束" % w17)
+	_check(_gm.all_card_defs.size() == 14, "第4关牌池=%d, 期望 14 (level 过滤: 8基础+2祝福/陨石+2xsteamify+2xgrow; 孢子/冰卡仅出现于其专属关)" % _gm.all_card_defs.size())
+	var w17 := 14 * 130 + 13 * 6
+	_check(w17 > 1100, "14张牌池全展开宽=%d, 期望 >1100 —— 量化记录: 若无手牌上限(8)仍会溢出, 上限为必要约束" % w17)
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:

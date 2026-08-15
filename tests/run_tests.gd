@@ -7,6 +7,7 @@ static func run_all() -> bool:
 	ok = ok and _test_transform_basic()
 	ok = ok and _test_multiply_basic()
 	ok = ok and _test_extinct_basic()
+	ok = ok and _test_drought_card()
 	ok = ok and _test_out_of_radius()
 	ok = ok and _test_chain_reaction_runs()
 	ok = ok and _test_phantom_multiply_no_chain()
@@ -114,6 +115,29 @@ static func _test_extinct_basic() -> bool:
 	var remaining = g.count_element(Element.PLANT)
 	assert(remaining == 0, "EXTINCTION should clear ALL plants in scope, remaining %d" % remaining)
 	print("test_extinct_basic OK")
+	return true
+
+static func _test_drought_card() -> bool:
+	# T2.1: 水元素反制牌「干涸」——半径内 WATER >= 5 时清空 WATER, 并清 GRASS
+	var g = Grid.new(6, 6)
+	_put(g, 1, 1, Element.WATER)
+	_put(g, 2, 1, Element.WATER)
+	_put(g, 3, 1, Element.WATER)
+	_put(g, 1, 2, Element.WATER)
+	_put(g, 1, 3, Element.WATER)
+	_put(g, 2, 2, Element.GRASS)
+	var card = _make_card({
+		"id":"drought","name":"干涸","kind":"EXTINCTION",
+		"trigger_element":"WATER","result_element":"NONE",
+		"radius":2,"life":4,"extinct_threshold":5,"also_clear":"GRASS"
+	})
+	var pillar = RulePillar.new(card, Vector2i(1, 1), 0)
+	var runner = ChainReaction.new()
+	var chain = runner.execute(g, [pillar])
+	assert(g.count_element(Element.WATER) == 0, "干涸 should clear all WATER in scope, left %d" % g.count_element(Element.WATER))
+	assert(g.count_element(Element.GRASS) == 0, "干涸 should also clear GRASS in scope, left %d" % g.count_element(Element.GRASS))
+	assert(chain >= 1, "干涸 should tick chain, got %d" % chain)
+	print("test_drought_card OK (chain=%d)" % chain)
 	return true
 
 static func _test_out_of_radius() -> bool:

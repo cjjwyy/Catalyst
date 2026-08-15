@@ -2,6 +2,8 @@
   "name": "海岸·教学",
   "size": [10, 10],
   "target": 100,
+  "chaos_elements": ["WATER", "STONE", "EARTH", "STEAM", "LAVA", "PLANT"],
+  
   "elements": [
     {"coord": [1, 2], "element": "WATER"},
     {"coord": [2, 2], "element": "WATER"},

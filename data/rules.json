@@ -17,6 +17,12 @@
     "also_count": "GRASS", "also_clear": "STEAM", "chain_reward": 1
   },
   {
+    "id": "drought", "name": "干涸", "kind": "EXTINCTION",
+    "trigger_element": "WATER", "result_element": "NONE",
+    "radius": 2, "life": 4, "extinct_threshold": 5,
+    "also_clear": "GRASS", "chain_reward": 1
+  },
+  {
     "id": "petrify", "name": "岩化", "kind": "TRANSFORM",
     "trigger_element": "STONE", "contact_element": "PLANT",
     "result_element": "EARTH", "self_replace": "NONE",

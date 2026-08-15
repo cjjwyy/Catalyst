@@ -6,7 +6,8 @@ const MAX = 1000
 signal reaction_applied(reaction)
 
 # 同步执行连锁,返回累计连锁数。reaction_applied 每次触发一个 Reaction 都会发出。
-func execute(grid: Grid, pillars: Array) -> int:
+# rng: 可选随机源; GameManager 传入可播种的 GameManager.rng, 使催化剂尘播撒确定化(测试基准可复现)。
+func execute(grid: Grid, pillars: Array, rng: RandomNumberGenerator = null) -> int:
 	var engine = RuleEngine.new()
 	var chain = 0
 	var changed: Array = []
@@ -31,14 +32,7 @@ func execute(grid: Grid, pillars: Array) -> int:
 					blessed_before[cc.coord] = true
 			r.apply(grid)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
-				var empty_dust_cells: Array = []
-				for c2 in grid.all_cells():
-					if not c2.has_state(State.DUST):
-						empty_dust_cells.append(c2)
-				# 每次播撒 3 粒尘,形成簇状
-				for _i in range(min(3, empty_dust_cells.size())):
-					empty_dust_cells.pick_random().add_state(State.DUST, 5)
-					empty_dust_cells.shuffle()
+				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:
 				for c in r.affected:
 					new_changed.append(c)
@@ -61,11 +55,25 @@ func _snapshot(grid: Grid) -> String:
 		s += str(c.element) + ","
 	return s
 
+func _spawn_dust(grid: Grid, rng: RandomNumberGenerator) -> void:
+	var empty_dust_cells: Array = []
+	for c in grid.all_cells():
+		if not c.has_state(State.DUST):
+			empty_dust_cells.append(c)
+	# 每次播撒 3 粒尘,形成簇状
+	if rng != null:
+		for _i in range(min(3, empty_dust_cells.size())):
+			empty_dust_cells[rng.randi_range(0, empty_dust_cells.size() - 1)].add_state(State.DUST, 5)
+	else:
+		for _i in range(min(3, empty_dust_cells.size())):
+			empty_dust_cells.pick_random().add_state(State.DUST, 5)
+			empty_dust_cells.shuffle()
+
 # 异步执行,每次 Reaction 之间等待 frame_delay,供 UI 演示
 # speed: 动画倍速(>0), <=0 表示跳过动画, 同步结算(仍逐条发 reaction_applied)
-func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: float = 1.0) -> int:
+func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: float = 1.0, rng: RandomNumberGenerator = null) -> int:
 	if speed <= 0.0:
-		return execute(grid, pillars)
+		return execute(grid, pillars, rng)
 	var engine = RuleEngine.new()
 	var chain = 0
 	var changed: Array = []
@@ -88,14 +96,7 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 					blessed_before[cc.coord] = true
 			r.apply(grid)
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
-				var empty_dust_cells: Array = []
-				for c2 in grid.all_cells():
-					if not c2.has_state(State.DUST):
-						empty_dust_cells.append(c2)
-				# 每次播撒 3 粒尘,形成簇状
-				for _i in range(min(3, empty_dust_cells.size())):
-					empty_dust_cells.pick_random().add_state(State.DUST, 5)
-					empty_dust_cells.shuffle()
+				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:
 				for c in r.affected:
 					new_changed.append(c)
