@@ -884,17 +884,34 @@ func tc23b_空规则文件降级() -> void:
 	_check(restored, "规则文件未能恢复, 数据文件处于损坏状态!")
 # ---------- TC-25 ----------
 func tc25_非法字段降级() -> void:
-	# kind 需合法 (非法 kind 字符串会触发 Kind.get 返回 null 赋 int 的运行时错误,
-	# 导致 from_dict 中断、后续字段全部丢失 —— 见下方现状断言)
 	var c = _make_rule_card({"id": "x", "name": "x", "kind": "TRANSFORM", "trigger_element": "QQQ",
 		"contact_element": "NOPE", "radius": 3, "extinct_threshold": 7})
 	_check(c.trigger_element == Element.NONE, "trigger_element=%d, 期望 NONE(0) (非法元素名降级, Element.from_string)" % c.trigger_element)
 	_check(c.contact_element == Element.NONE, "contact_element=%d, 期望 NONE" % c.contact_element)
 	_check(c.radius == 3 and c.extinct_threshold == 7, "radius=%d/threshold=%d, 期望 3/7 (合法字段应保留)" % [c.radius, c.extinct_threshold])
-	var c2 = _make_rule_card({"id": "y", "name": "y", "kind": "XXX", "radius": 3})
-	_check(c2.kind == RuleCard.Kind.TRANSFORM and c2.radius == 1,
-		"非法kind现状: kind=%d(0=TRANSFORM) radius=%d(默认1) —— 非法kind使 from_dict 中断, 后续字段丢失 (RuleCard.gd:27), 现状记录, 修复后更新断言" % [c2.kind, c2.radius])
-
+	var c2 = load("res://src/rules/RuleCard.gd").new()
+	var ok2: bool = c2.from_dict({"id": "y", "name": "y", "kind": "XXX", "radius": 3})
+	_check(ok2 == false, "非法 kind 的 from_dict 应返回 false (整条跳过)" % ok2)
+	_check(c2.kind == RuleCard.Kind.TRANSFORM and c2.radius == RuleCard.MIN_RADIUS,
+		"非法kind应保留默认: kind=%d(0=TRANSFORM) radius=%d(默认1), 且后续字段不写入 (T2.4)" % [c2.kind, c2.radius])
+	var c3 = _make_rule_card({"id": "z", "name": "z", "kind": "TRANSFORM", "radius": 99, "life": 0, "extinct_threshold": -4})
+	_check(c3.radius == RuleCard.MAX_RADIUS and c3.life == RuleCard.MIN_LIFE and c3.extinct_threshold == RuleCard.MIN_EXTINCT_THRESHOLD,
+		"radius/life/threshold 应钳制到安全带, 实际 %d/%d/%d" % [c3.radius, c3.life, c3.extinct_threshold])
+	# 文件级跳过: 非法 kind 条目不崩溃, 合法条目不受影响
+	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
+	var backup := f.get_as_text()
+	f.close()
+	var wf = FileAccess.open(RULES_PATH, FileAccess.WRITE)
+	wf.store_string('[{"id":"bad","name":"bad","kind":"XXX","radius":3},{"id":"good","name":"good","kind":"TRANSFORM","trigger_element":"WATER","radius":2,"life":4}]')
+	wf.close()
+	var loaded: Array = _gm._load_rules()
+	_check(loaded.size() == 1 and loaded[0].id == "good" and loaded[0].radius == 2,
+		"非法 kind 条目应整条跳过且合法条目保留: 实际 %d 张, 首张=%s" % [loaded.size(), loaded[0].id if not loaded.is_empty() else "空"])
+	wf = FileAccess.open(RULES_PATH, FileAccess.WRITE)
+	wf.store_string(backup)
+	wf.close()
+	_gm.start_game(0)
+	_check(_gm.hand.hand_size() == 5, "恢复 rules.json 后手牌=%d, 期望 5" % _gm.hand.hand_size())
 # ---------- TC-26a ----------
 func tc26a_界外点击() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()

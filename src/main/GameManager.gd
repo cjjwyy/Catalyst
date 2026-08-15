@@ -233,8 +233,8 @@ func _load_rules() -> Array:
 			push_warning("rules.json 中存在非对象条目, 已跳过")
 			continue
 		var c = RuleCard.new()
-		c.from_dict(entry)
-		out.append(c)
+		if c.from_dict(entry):
+			out.append(c)
 	if out.is_empty():
 		push_warning("rules.json 为空或无有效规则牌, 启用内置降级牌组")
 		return _default_rules()

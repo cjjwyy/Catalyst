@@ -8,6 +8,7 @@ static func run_all() -> bool:
 	ok = ok and _test_multiply_basic()
 	ok = ok and _test_extinct_basic()
 	ok = ok and _test_drought_card()
+	ok = ok and _test_rule_card_invalid_kind()
 	ok = ok and _test_out_of_radius()
 	ok = ok and _test_chain_reaction_runs()
 	ok = ok and _test_phantom_multiply_no_chain()
@@ -138,6 +139,21 @@ static func _test_drought_card() -> bool:
 	assert(g.count_element(Element.GRASS) == 0, "干涸 should also clear GRASS in scope, left %d" % g.count_element(Element.GRASS))
 	assert(chain >= 1, "干涸 should tick chain, got %d" % chain)
 	print("test_drought_card OK (chain=%d)" % chain)
+	return true
+
+static func _test_rule_card_invalid_kind() -> bool:
+	# T2.4: 非法 kind 必须整条跳过, 不得抛运行时错误; 数值字段按安全带钳制
+	var bad = RuleCard.new()
+	var ok = bad.from_dict({"id": "bad", "name": "bad", "kind": "XXX", "radius": 3})
+	assert(ok == false, "invalid kind from_dict should return false")
+	assert(bad.kind == RuleCard.Kind.TRANSFORM, "invalid kind card should keep default TRANSFORM")
+	assert(bad.radius == 1, "invalid kind card should keep default radius, got %d" % bad.radius)
+	var clamped = RuleCard.new()
+	clamped.from_dict({"id": "c", "name": "c", "kind": "TRANSFORM", "radius": 99, "life": 0, "extinct_threshold": -4})
+	assert(clamped.radius == RuleCard.MAX_RADIUS, "radius should clamp to MAX_RADIUS, got %d" % clamped.radius)
+	assert(clamped.life == RuleCard.MIN_LIFE, "life should clamp to MIN_LIFE, got %d" % clamped.life)
+	assert(clamped.extinct_threshold == RuleCard.MIN_EXTINCT_THRESHOLD, "threshold should clamp to minimum, got %d" % clamped.extinct_threshold)
+	print("test_rule_card_invalid_kind OK")
 	return true
 
 static func _test_out_of_radius() -> bool:
