@@ -1,8 +1,9 @@
 extends Node
 
-enum Phase { OBSERVE, LAYOUT, EVOLVE }
+enum Phase { OBSERVE, LAYOUT, EVOLVE, RETAIN }
 
 const DEAD_TURNS = 10
+const RETAIN_LIMIT = 3  # T3.5: 回合结束保留至多 3 张
 const RULES_PATH = "res://data/rules.json"
 const LEVEL_PATH = "res://data/coast.json"
 const TestsScript = preload("res://tests/run_tests.gd")
@@ -34,6 +35,7 @@ var hand: HandManager
 var energy: EnergySystem
 var all_card_defs: Array = []
 var save_manager: SaveManager = SaveManager.new()
+var auto_retention: bool = true  # T3.5: true=headless/自动保留测试模式; Main 开启手动保留 UI
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确定性: 游戏逻辑随机源, 可播种(种子化 T3.8 的前置)
 var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
 var _running_runner = null  # T2.5: 当前演化 runner; start_game/load_game 置 cancelled 并清空
@@ -91,6 +93,7 @@ func start_game(level_idx: int = -1) -> void:
 	dead_turns = 0
 	game_ended = false
 	phase = Phase.LAYOUT
+	auto_retention = true  # T3.5: 直接调用 start_game(测试/无 UI)默认自动保留; Main 随后改手动
 	if not rules_data_error.is_empty():
 		# T2.3: 规则数据损坏时已 emit game_over, 这里同步置位, 不让 UI/逻辑落入静默死锁
 		game_ended = true
@@ -103,6 +106,35 @@ func _cancel_evolution() -> void:
 	if _running_runner != null:
 		_running_runner.cancelled = true
 	_running_runner = null
+
+func _auto_retain() -> void:
+	while hand.hand_size() > RETAIN_LIMIT:
+		hand.discard_from_hand(_worst_card_idx())
+
+func _worst_card_idx() -> int:
+	var priority := ["steamify", "harvest", "grow", "drought", "extinct", "petrify", "grass_grow", "grass_spread", "sporify", "spore_bloom", "freeze", "melt", "bless", "meteor_strike"]
+	var worst := 0
+	var worst_rank := -1
+	for i in range(hand.hand_size()):
+		var card = hand.hand[i]
+		var rank: int = priority.find(card.id)
+		if rank == -1:
+			rank = 999
+		if rank > worst_rank:
+			worst_rank = rank
+			worst = i
+	return worst
+
+# T3.5: Main 保留阶段点击一张手牌 → 弃掉; 弃到 3 张后自动回到布局阶段
+func discard_for_retention(idx: int) -> bool:
+	if phase != Phase.RETAIN or hand.hand_size() <= RETAIN_LIMIT:
+		return false
+	if hand.discard_from_hand(idx) == null:
+		return false
+	if hand.hand_size() <= RETAIN_LIMIT:
+		phase = Phase.LAYOUT
+	state_changed.emit()
+	return true
 
 # T1.4: 由 Main 调用 —— 若无进行中的局则按当前关卡开局(支持读档后跳过重开)
 func ensure_game_started() -> void:
@@ -412,7 +444,14 @@ func end_turn() -> void:
 	turn += 1
 	hand.draw(3)
 	energy.refill()
-	phase = Phase.LAYOUT
+	if hand.hand_size() > RETAIN_LIMIT:
+		if auto_retention:
+			_auto_retain()
+			phase = Phase.LAYOUT
+		else:
+			phase = Phase.RETAIN  # T3.5: 等玩家点击弃牌
+	else:
+		phase = Phase.LAYOUT
 	state_changed.emit()
 
 func _reroll_wind() -> void:

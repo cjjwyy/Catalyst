@@ -25,6 +25,7 @@ static func run_all() -> bool:
 	ok = ok and _test_level_manager()
 	ok = ok and _test_level_load()
 	ok = ok and _test_hand_cap()
+	ok = ok and _test_hand_retention_discard()
 	ok = ok and _test_sporify()
 	ok = ok and _test_spore_bloom()
 	ok = ok and _test_burning_ignite()
@@ -477,6 +478,25 @@ static func _test_hand_cap() -> bool:
 	var final = hm.hand_size() + hm.draw_pile.size() + hm.discard_pile.size()
 	assert(final == 11, "任何抽牌后总牌数应守恒(11), 实际 %d" % final)
 	print("test_hand_cap OK")
+	return true
+
+static func _test_hand_retention_discard() -> bool:
+	# T3.5: 保留阶段从手牌指定弃牌, 进弃牌堆且总数守恒
+	var hm = HandManager.new()
+	var cards: Array = []
+	for i in range(6):
+		var c = RuleCard.new()
+		c.from_dict({"id": "c%d" % i, "name": "c%d" % i, "kind": "TRANSFORM", "radius": 2, "life": 4})
+		cards.append(c)
+	hm.fill_draw_pile(cards)
+	hm.refill_to(5)
+	var dropped = hm.discard_from_hand(2)
+	assert(dropped != null, "discard_from_hand should return dropped card")
+	assert(hm.hand_size() == 4, "hand size should be 4 after one discard")
+	assert(hm.discard_size() == 1, "discard pile should grow to 1")
+	assert(hm.hand_size() + hm.draw_pile.size() + hm.discard_pile.size() == 6, "card total should be conserved")
+	assert(hm.discard_from_hand(99) == null, "invalid index should return null")
+	print("test_hand_retention_discard OK")
 	return true
 
 static func _test_sporify() -> bool:

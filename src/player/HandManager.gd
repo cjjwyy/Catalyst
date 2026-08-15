@@ -59,3 +59,11 @@ func hand_capacity() -> int:
 
 func discard_size() -> int:
 	return discard_pile.size()
+
+# T3.5 保留阶段: 从手牌弃掉指定索引, 进弃牌堆
+func discard_from_hand(idx: int) -> RuleCard:
+	if idx < 0 or idx >= hand.size():
+		return null
+	var card: RuleCard = hand.pop_at(idx)
+	discard_pile.append(card)
+	return card

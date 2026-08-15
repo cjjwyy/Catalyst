@@ -61,6 +61,7 @@ func _initialize() -> void:
 		["TC-18", "16x16关控件互不遮挡", tc18_控件互不遮挡],
 		["TC-19", "图例覆盖全部元素", tc19_图例元素完整性],
 		["TC-20", "手牌区宽度容量", tc20_手牌区宽度容量],
+		["TC-32", "卡面场景与手动保留", tc32_卡面与手动保留],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -610,16 +611,17 @@ func _cleanup_save(path: String) -> void:
 
 # ---------- TC-14 ----------
 func tc14_手牌上限与布局容量() -> void:
-	# T1.2: 手牌上限 8(HandManager.MAX_HAND), 超限抽牌进弃牌堆; 牌总数守恒;
-	# 8 张 × 130px 卡面 + 间距 ≤ 1100px 容器宽, 布局不再溢出
+	# T1.2: 抽牌上限 8; T3.5: 回合结束自动保留模式留 3 张; 牌总数守恒;
+	# 8 张 × 130px 卡面 + 间距 ≤ 1100px 容器宽, 布局不溢出
+	_gm.auto_retention = true
 	_gm.start_game(0)
 	for _i in range(30):
 		_gm.end_turn()
-	_check(_gm.hand.hand_size() == 8, "30回合不打牌后手牌=%d, 期望 8 (HandManager.MAX_HAND 上限)" % _gm.hand.hand_size())
+	_check(_gm.hand.hand_size() == _gm.RETAIN_LIMIT, "30回合不打牌后手牌=%d, 期望 %d (自动保留上限)" % [_gm.hand.hand_size(), _gm.RETAIN_LIMIT])
 	var total: int = _gm.hand.hand_size() + _gm.hand.draw_pile.size() + _gm.hand.discard_pile.size()
-	_check(total == _gm.all_card_defs.size(), "牌守恒: 手牌+抽牌堆+弃牌堆=%d, 期望 %d (第1关牌池 11)" % [total, _gm.all_card_defs.size()])
+	_check(total == _gm.all_card_defs.size(), "牌守恒: 手牌+抽牌堆+弃牌堆=%d, 期望 %d" % [total, _gm.all_card_defs.size()])
 	var w := 8 * 130 + 7 * 6
-	_check(w == 1082 and w <= 1100, "8张手牌(上限)所需宽=%dpx, 期望 1082 ≤ 1100 (HandContainer 可用宽, 卡面 130px/张)" % w)
+	_check(w == 1082 and w <= 1100, "抽牌后瞬时最多 8 张手牌所需宽=%dpx, 期望 1082 ≤ 1100 (HandContainer 可用宽, 卡面 130px/张)" % w)
 
 # ---------- TC-15 ----------
 func tc15_演化耗时区间() -> void:
@@ -746,6 +748,31 @@ func tc20_手牌区宽度容量() -> void:
 	_check(_gm.all_card_defs.size() == 14, "第4关牌池=%d, 期望 14 (level 过滤: 8基础+2祝福/陨石+2xsteamify+2xgrow; 孢子/冰卡仅出现于其专属关)" % _gm.all_card_defs.size())
 	var w17 := 14 * 130 + 13 * 6
 	_check(w17 > 1100, "14张牌池全展开宽=%d, 期望 >1100 —— 量化记录: 若无手牌上限(8)仍会溢出, 上限为必要约束" % w17)
+
+# ---------- TC-32 (T3.5) ----------
+func tc32_卡面与手动保留() -> void:
+	# 1) 手动保留: end_turn 后进入 RETAIN, 弃到 3 张自动回布局
+	_gm.start_game(0)
+	_gm.auto_retention = false
+	_gm.end_turn()
+	_check(_gm.phase == GameManager.Phase.RETAIN, "抽到超过3张后 phase=%d, 期望 RETAIN(%d)" % [_gm.phase, GameManager.Phase.RETAIN])
+	_check(_gm.hand.hand_size() > _gm.RETAIN_LIMIT, "保留阶段手牌=%d, 期望 >%d" % [_gm.hand.hand_size(), _gm.RETAIN_LIMIT])
+	for _i in range(_gm.hand.hand_size() - _gm.RETAIN_LIMIT):
+		_check(_gm.discard_for_retention(0), "保留阶段弃牌失败")
+	_check(_gm.hand.hand_size() == _gm.RETAIN_LIMIT, "弃牌后手牌=%d, 期望 %d" % [_gm.hand.hand_size(), _gm.RETAIN_LIMIT])
+	_check(_gm.phase == GameManager.Phase.LAYOUT, "弃到3张后 phase=%d, 期望 LAYOUT" % _gm.phase)
+	_check(_gm.discard_for_retention(0) == false, "保留结束后不应继续弃牌")
+	# 2) 卡面场景: 结构齐全, setup 后标题/效果文本可读
+	_gm.start_game(0)
+	var card_scene = load("res://scenes/RuleCardView.tscn").instantiate()
+	card_scene.setup(_gm.hand.hand[0], 0)
+	_check(card_scene.get_node_or_null("CardFrame") != null, "RuleCardView 缺 CardFrame")
+	_check(card_scene.get_node_or_null("TypeBand") != null, "RuleCardView 缺 TypeBand")
+	var title: Label = card_scene.get_node_or_null("TitleLabel")
+	_check(title != null and title.text == _gm.hand.hand[0].display_name, "RuleCardView 标题文本=%s, 期望 %s" % [title.text if title != null else "?", _gm.hand.hand[0].display_name])
+	var eff: Label = card_scene.get_node_or_null("EffectLabel")
+	_check(eff != null and eff.text != "", "RuleCardView 效果文本为空")
+	card_scene.free()
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:
@@ -973,6 +1000,7 @@ func tc28b_演化后清空选中() -> void:
 	var main = load(MAIN_SCENE).instantiate()
 	root.add_child(main)
 	await self.process_frame
+	_gm.auto_retention = true  # 本用例聚焦选中清理, 不进入手动保留阶段
 	var renderer = main.grid_renderer
 	var spot := Vector2i(-1, -1)
 	for c in _gm.grid.all_cells():
@@ -1046,6 +1074,7 @@ func tc30c_演化中切场景() -> void:
 	var main = load(MAIN_SCENE).instantiate()
 	root.add_child(main)
 	await self.process_frame
+	_gm.auto_retention = true  # 本用例聚焦协程取消, 不进入手动保留阶段
 	var planted := 0
 	for c in _gm.grid.all_cells():
 		if planted < 40:

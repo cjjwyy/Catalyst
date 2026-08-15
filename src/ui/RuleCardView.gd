@@ -5,17 +5,43 @@ var index: int = -1
 
 signal selected(idx: int)
 
+@onready var title_label: Label = get_node_or_null("TitleLabel")
+@onready var effect_label: Label = get_node_or_null("EffectLabel")
+@onready var trigger_icon: TextureRect = get_node_or_null("TriggerIcon")
+@onready var result_icon: TextureRect = get_node_or_null("ResultIcon")
+@onready var type_band: ColorRect = get_node_or_null("TypeBand")
+
 func setup(c, idx: int) -> void:
 	card = c
 	index = idx
-	text = _label()
+	text = ""
 	tooltip_text = _tooltip()
-	add_theme_font_size_override("font_size", 12)  # T1.2: 130px 卡面宽度下 12px 字号不裁剪
-	pressed.connect(_on_pressed)
+	var t: Label = get_node_or_null("TitleLabel")
+	if t != null:
+		t.text = c.display_name if c != null else "-"
+	var e: Label = get_node_or_null("EffectLabel")
+	if e != null:
+		e.text = _effect_text()
+	var band: ColorRect = get_node_or_null("TypeBand")
+	if band != null:
+		band.color = _kind_color()
+	var ti: TextureRect = get_node_or_null("TriggerIcon")
+	if ti != null and card != null:
+		ti.texture = _element_texture(card.trigger_element)
+	var ri: TextureRect = get_node_or_null("ResultIcon")
+	if ri != null and card != null:
+		ri.texture = _element_texture(card.result_element)
+	if not pressed.is_connected(_on_pressed):
+		pressed.connect(_on_pressed)
 
 func refresh() -> void:
-	text = _label()
 	tooltip_text = _tooltip()
+	var t: Label = get_node_or_null("TitleLabel")
+	if t != null and card != null:
+		t.text = card.display_name
+	var e: Label = get_node_or_null("EffectLabel")
+	if e != null:
+		e.text = _effect_text()
 
 const CN = {
 	Element.NONE: "空", Element.WATER: "水", Element.STONE: "岩",
@@ -25,64 +51,64 @@ const CN = {
 	Element.ICE: "冰"
 }
 
-func _label() -> String:
-	if card == null: return "-"
-	var extra = ""
+func _element_texture(elem: int) -> Texture2D:
+	var key: String = Element.NAMES.get(elem, "empty").to_lower()
+	return load("res://assets/%s.png" % key)
+
+func _kind_color() -> Color:
+	if card == null:
+		return Color(0.2, 0.2, 0.25)
+	match card.kind:
+		RuleCard.Kind.MULTIPLY:
+			return Color(0.15, 0.45, 0.2, 0.9)
+		RuleCard.Kind.EXTINCTION:
+			return Color(0.55, 0.16, 0.16, 0.9)
+		_:
+			return Color(0.2, 0.35, 0.7, 0.9)
+
+func _effect_text() -> String:
+	if card == null:
+		return "-"
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			extra = "转化\n%s 接触 %s\n→ %s" % [
-				CN.get(card.trigger_element,"?"),
-				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?")]
+			var s := "%s+%s → %s" % [CN.get(card.trigger_element, "?"), CN.get(card.contact_element, "?"), CN.get(card.result_element, "?")]
 			if card.self_replace != Element.NONE:
-				extra += " + 清%s" % CN.get(card.self_replace,"?")
+				s += " 清%s" % CN.get(card.self_replace, "?")
+			return s
 		RuleCard.Kind.MULTIPLY:
-			extra = "增殖\n%s 相邻 %s\n→ 扩散 %s" % [
-				CN.get(card.trigger_element,"?"),
-				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?")]
+			return "%s+%s → 扩散%s" % [CN.get(card.trigger_element, "?"), CN.get(card.contact_element, "?"), CN.get(card.result_element, "?")]
 		RuleCard.Kind.EXTINCTION:
-			extra = "灭绝\n%s ≥%d个\n→ 清空所有%s" % [
-				CN.get(card.trigger_element,"?"),
-				card.extinct_threshold,
-				CN.get(card.trigger_element,"?")]
-			if card.also_count != Element.NONE:
-				extra += "+%s" % CN.get(card.also_count,"?")
-			if card.also_clear != Element.NONE:
-				extra += "\n也清%s" % CN.get(card.also_clear,"?")
-	var tail = "\n(半径%d格, %d回合" % [card.radius, card.life]
-	if card.chain_reward > 1:
-		tail += ", +%d连" % card.chain_reward
-	tail += ")"
-	return extra + tail
+			return "%s≥%d 清空" % [CN.get(card.trigger_element, "?"), card.extinct_threshold]
+		_:
+			return ""
 
 func _tooltip() -> String:
-	if card == null: return ""
+	if card == null:
+		return ""
+	var desc_v = card.get("desc")
+	var desc: String = str(desc_v) if desc_v != null else ""
+	var tip_v = card.get("tip")
+	var tip: String = str(tip_v) if tip_v != null else ""
+	var base := _tooltip_rule()
+	if desc != "":
+		base += "\n说明: %s" % desc
+	if tip != "":
+		base += "\n示例: %s" % tip
+	base += "\n半径%d格 · 寿命%d回合 · 连锁+%d" % [card.radius, card.life, card.chain_reward]
+	return base
+
+func _tooltip_rule() -> String:
 	match card.kind:
 		RuleCard.Kind.TRANSFORM:
-			return "转化: 柱子的扫描范围(r%d)内,\n每格%s 若范围内有 %s → 变 %s\n寿命 %d 回合" % [
-				card.radius,
-				CN.get(card.trigger_element,"?"),
-				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?"),
-				card.life]
+			return "转化: 柱扫描半径内,每格%s 若范围内有 %s → 变 %s" % [
+				CN.get(card.trigger_element, "?"), CN.get(card.contact_element, "?"), CN.get(card.result_element, "?")]
 		RuleCard.Kind.MULTIPLY:
-			return "增殖: 柱子的扫描范围(r%d)内,\n每格%s 若范围内有 %s → 空格生 %s\n寿命 %d 回合" % [
-				card.radius,
-				CN.get(card.trigger_element,"?"),
-				CN.get(card.contact_element,"?"),
-				CN.get(card.result_element,"?"),
-				card.life]
+			return "增殖: 柱扫描半径内,每格%s 若范围内有 %s → 空格生 %s" % [
+				CN.get(card.trigger_element, "?"), CN.get(card.contact_element, "?"), CN.get(card.result_element, "?")]
 		RuleCard.Kind.EXTINCTION:
-			var s = "灭绝: 柱子的扫描范围(r%d)内" % card.radius
-			s += "\n%s" % CN.get(card.trigger_element,"?")
-			if card.also_count != Element.NONE:
-				s += "+%s" % CN.get(card.also_count,"?")
-			s += " ≥%d 个 → 全部清空" % card.extinct_threshold
-			if card.also_clear != Element.NONE:
-				s += "\n同时清除范围内 %s" % CN.get(card.also_clear,"?")
-			return s + "\n寿命 %d 回合" % card.life
-		_: return ""
+			return "灭绝: 柱扫描半径内 %s≥%d → 全部清空" % [CN.get(card.trigger_element, "?"), card.extinct_threshold]
+		_:
+			return ""
 
 func _on_pressed() -> void:
 	selected.emit(index)

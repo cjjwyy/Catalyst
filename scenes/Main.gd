@@ -1,5 +1,7 @@
 extends Node2D
 
+const CARD_VIEW_SCENE = preload("res://scenes/RuleCardView.tscn")
+
 var GameManager: Node
 var grid_renderer: Node2D
 var chain_counter: Label
@@ -70,6 +72,7 @@ func _ready() -> void:
 	GameManager.flash_cell.connect(grid_renderer.on_flash)
 	grid_renderer.cell_clicked.connect(_on_cell_clicked)
 	grid_renderer.GameManager = GameManager
+	GameManager.auto_retention = false  # T3.5: 真实游戏走手动保留; 测试可在执行前改回 true
 	GameManager.ensure_game_started()  # T1.4: 新游戏开局 / 读档后不重开
 	_refresh()
 
@@ -80,14 +83,16 @@ func _refresh() -> void:
 	total_counter.text = "总和: %d / %d" % [GameManager.chain_total, GameManager.target]
 	energy_label.text = GameManager.energy.text()
 	status_label.text = "T%d  %s  死寂%d/%d" % [GameManager.turn, _phase_name(GameManager.phase), GameManager.dead_turns, GameManager.DEAD_TURNS]
-	hand_count_label.text = "手牌: %d/%d" % [GameManager.hand.hand_size(), GameManager.hand.hand_capacity()]
+	if GameManager.phase == GameManager.Phase.RETAIN:
+		hand_count_label.text = "保留: 点击弃牌, 留%d张 (%d/%d)" % [GameManager.RETAIN_LIMIT, GameManager.hand.hand_size(), GameManager.hand.hand_capacity()]
+	else:
+		hand_count_label.text = "手牌: %d/%d" % [GameManager.hand.hand_size(), GameManager.hand.hand_capacity()]
 	for v in card_views:
 		v.queue_free()
 	card_views.clear()
 	for i in range(GameManager.hand.hand_size()):
 		var c = GameManager.hand.hand[i]
-		var v = Button.new()
-		v.set_script(load("res://src/ui/RuleCardView.gd"))
+		var v = CARD_VIEW_SCENE.instantiate()
 		v.setup(c, i)
 		v.custom_minimum_size = Vector2(130, 80)  # T1.2: 8 张上限 × 130px ≤ 1100px 容器
 		v.selected.connect(_on_card_selected)
@@ -105,9 +110,13 @@ func _phase_name(p: int) -> String:
 		0: return "观察"
 		1: return "布局"
 		2: return "演化"
+		3: return "保留"
 		_: return "??"
 
 func _on_card_selected(idx: int) -> void:
+	if GameManager.phase == GameManager.Phase.RETAIN:
+		GameManager.discard_for_retention(idx)  # T3.5: 保留阶段点击手牌即弃牌
+		return
 	grid_renderer.select_card(idx)
 
 func _on_cell_clicked(coord: Vector2i) -> void:
@@ -172,6 +181,7 @@ func _on_level_complete(_idx: int) -> void:
 
 func _on_next_level() -> void:
 	GameManager.start_game(GameManager.level_manager.current_level)
+	GameManager.auto_retention = false
 	gameover_panel.visible = false
 	next_button.visible = false
 	retry_button.visible = false
@@ -179,6 +189,7 @@ func _on_next_level() -> void:
 
 func _on_retry() -> void:
 	GameManager.start_game(GameManager.level_manager.current_level)
+	GameManager.auto_retention = false
 	gameover_panel.visible = false
 	next_button.visible = false
 	retry_button.visible = false
