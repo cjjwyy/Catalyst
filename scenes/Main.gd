@@ -21,6 +21,7 @@ var next_button: Button
 var retry_button: Button
 var menu_button: Button
 var save_button: Button
+var undo_button: Button
 var save_dialog: PanelContainer = null
 var save_name_edit: LineEdit = null
 var card_views: Array = []
@@ -59,6 +60,14 @@ func _ready() -> void:
 	menu_button.pressed.connect(_on_menu)
 	save_button = $SaveButton
 	save_button.pressed.connect(_on_save_clicked)
+	undo_button = Button.new()
+	undo_button.name = "UndoButton"
+	undo_button.text = "撤销上回合"
+	undo_button.position = Vector2(1300, 813)
+	undo_button.size = Vector2(160, 26)
+	undo_button.focus_mode = Control.FOCUS_ALL
+	undo_button.pressed.connect(_on_undo)
+	add_child(undo_button)
 	next_button.visible = false
 	retry_button.visible = false
 	execute_button.pressed.connect(_on_execute)
@@ -104,6 +113,7 @@ func _refresh() -> void:
 	skip_button.visible = (GameManager.phase == 2)
 	# T1.4: 演化中/结算后禁止存档, 布局阶段可存档
 	save_button.disabled = (GameManager.phase == 2) or GameManager.game_ended
+	undo_button.disabled = not GameManager.can_undo()
 
 func _phase_name(p: int) -> String:
 	match p:
@@ -136,6 +146,10 @@ func _on_speed() -> void:
 	_sound_chain = GameManager.chain_total
 	_effect_level = 1
 	GameManager.execute(4.0)  # T1.3: 4x 加速
+
+func _on_undo() -> void:
+	if GameManager.undo_turn():
+		grid_renderer.select_card(-1)
 
 func _on_skip() -> void:
 	grid_renderer.select_card(-1)  # T2.2: 同执行按钮

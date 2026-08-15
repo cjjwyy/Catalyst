@@ -40,6 +40,8 @@ var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确�
 var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
 var _running_runner = null  # T2.5: 当前演化 runner; start_game/load_game 置 cancelled 并清空
 var _evolution_serial: int = 0  # T2.5: 演化代数; 旧协程完成时若代数不匹配则不写回
+var turn_snapshots: Array = []  # T3.6: 每回合 world rules 前的完整快照栈
+const MAX_TURN_SNAPSHOTS = 5
 
 signal state_changed
 signal reaction_applied(reaction)
@@ -85,6 +87,7 @@ func start_game(level_idx: int = -1) -> void:
 	_prepare_card_defs(level_manager.current_level)
 	grid = _load_level(lvl.path)
 	pillars.clear()  # T2.5: 新网格必须搭配空柱数组, 旧演化/旧局柱子不得残留
+	turn_snapshots.clear()  # T3.6: 新局不继承旧局撤销栈
 	hand = HandManager.new()
 	hand.fill_draw_pile(all_card_defs)
 	hand.refill_to(5)
@@ -106,6 +109,20 @@ func _cancel_evolution() -> void:
 	if _running_runner != null:
 		_running_runner.cancelled = true
 	_running_runner = null
+
+# T3.6: 回滚到上一回合 world rules/抽牌前; 玩家可右键撤回柱子拿回卡与能量
+func can_undo() -> bool:
+	return not turn_snapshots.is_empty() and phase == Phase.LAYOUT and not game_ended
+
+func undo_turn() -> bool:
+	if not can_undo():
+		return false
+	_cancel_evolution()
+	var snap: Dictionary = turn_snapshots.pop_back()
+	if not _restore_snapshot(snap):
+		return false
+	state_changed.emit()
+	return true
 
 func _auto_retain() -> void:
 	while hand.hand_size() > RETAIN_LIMIT:
@@ -190,6 +207,7 @@ func save_game(slot: int, slot_name: String) -> bool:
 
 func load_game(slot: int) -> bool:
 	_cancel_evolution()  # T2.5: 读档也会替换网格, 同样需要中止旧演化
+	turn_snapshots.clear()  # T3.6: 读档不继承撤销栈
 	var snap = save_manager.load_slot(slot)
 	if typeof(snap) != TYPE_DICTIONARY or snap.is_empty():
 		return false
@@ -434,6 +452,10 @@ func execute(speed: float = 1.0) -> void:
 	end_turn()
 
 func end_turn() -> void:
+	if grid != null and not game_ended:
+		turn_snapshots.append(_snapshot_game())
+		if turn_snapshots.size() > MAX_TURN_SNAPSHOTS:
+			turn_snapshots.pop_front()
 	decay_pillars()
 	for c in grid.all_cells():
 		c.tick_states()

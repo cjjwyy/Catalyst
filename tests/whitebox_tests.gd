@@ -62,6 +62,7 @@ func _initialize() -> void:
 		["TC-19", "图例覆盖全部元素", tc19_图例元素完整性],
 		["TC-20", "手牌区宽度容量", tc20_手牌区宽度容量],
 		["TC-32", "卡面场景与手动保留", tc32_卡面与手动保留],
+		["TC-33", "回合撤销快照", tc33_回合撤销],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -220,7 +221,7 @@ func tc05_主要按钮键盘可聚焦() -> void:
 		_check(false, "GameOverPanel 节点缺失: Main.tscn 第125-166行文本编码损坏导致解析错乱(MenuButton.text 被错解析为'重试'), 通关/失败界面及下一关/重试按钮运行时不可用 —— 属待修复缺陷")
 		main.free()
 		return
-	for path in ["HelpButton", "ExecuteButton", "MenuButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
+	for path in ["HelpButton", "ExecuteButton", "MenuButton", "UndoButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
 		var btn = main.get_node_or_null(path)
 		_check(btn != null, "场景缺少按钮节点 %s" % path)
 		if btn != null:
@@ -773,6 +774,35 @@ func tc32_卡面与手动保留() -> void:
 	var eff: Label = card_scene.get_node_or_null("EffectLabel")
 	_check(eff != null and eff.text != "", "RuleCardView 效果文本为空")
 	card_scene.free()
+
+# ---------- TC-33 (T3.6) ----------
+func tc33_回合撤销() -> void:
+	_gm.start_game(0)
+	var spot := Vector2i(-1, -1)
+	for c in _gm.grid.all_cells():
+		if c.element == Element.NONE and c.pillar == null:
+			spot = c.coord
+			break
+	_check(spot.x >= 0, "未找到空格")
+	if spot.x < 0:
+		return
+	_check(_gm.play_card(0, spot), "撤销测试落柱失败")
+	var hash_before: String = _grid_hash(_gm.grid)
+	var pillars_before: int = _gm.pillars.size()
+	var hand_before: int = _gm.hand.hand_size()
+	var energy_before: int = _gm.energy.current
+	var turn_before: int = _gm.turn
+	for _i in range(3):
+		_gm.end_turn()
+		_check(_gm.turn == turn_before + 1, "end_turn 后 turn=%d, 期望 %d" % [_gm.turn, turn_before + 1])
+		_check(_gm.can_undo(), "end_turn 后应可撤销")
+		_check(_gm.undo_turn(), "撤销失败")
+		_check(_gm.turn == turn_before, "撤销后 turn=%d, 期望 %d" % [_gm.turn, turn_before])
+		_check(_grid_hash(_gm.grid) == hash_before, "撤销后网格哈希与快照不一致")
+		_check(_gm.pillars.size() == pillars_before, "撤销后柱子数=%d, 期望 %d" % [_gm.pillars.size(), pillars_before])
+		_check(_gm.hand.hand_size() == hand_before, "撤销后手牌=%d, 期望 %d" % [_gm.hand.hand_size(), hand_before])
+		_check(_gm.energy.current == energy_before, "撤销后能量=%d, 期望 %d" % [_gm.energy.current, energy_before])
+	_check(_gm.can_undo() == false, "快照栈耗尽后仍可撤销")
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:
