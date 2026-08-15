@@ -229,6 +229,14 @@ func tc05_主要按钮键盘可聚焦() -> void:
 	_check(sound != null, "Main 场景缺少 SoundManager (T3.3 音效层)")
 	if sound != null:
 		_check(sound.get_node_or_null("ChainTone") != null, "SoundManager 缺少 ChainTone AudioStreamPlayer")
+	# T3.4: 粒子演出层与里程碑闪光结构存在; 调用接口可创建粒子
+	var effects = main.get_node_or_null("EffectLayer")
+	_check(effects != null, "Main 场景缺少 EffectLayer (T3.4 粒子演出层)")
+	if effects != null:
+		var p = effects.burst_at(Vector2(120, 120), Color.RED, 4)
+		_check(p != null and effects.particles.size() >= 1, "EffectLayer.burst_at 未创建 CPUParticles2D")
+		effects.milestone(100)
+		_check(effects.flash_rect != null, "EffectLayer 缺少里程碑闪光 ColorRect")
 	main.free()
 
 # ---------- TC-06 ----------

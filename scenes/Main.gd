@@ -23,13 +23,18 @@ var save_dialog: PanelContainer = null
 var save_name_edit: LineEdit = null
 var card_views: Array = []
 var sound_manager: Node = null
+var effect_layer: Node2D = null
 var _sound_chain: int = 0
+var _effect_level: int = 2  # T3.4: 2=普通全量, 1=4x降级, 0=跳过关闭
 
 func _ready() -> void:
 	GameManager = get_node("/root/GameManager")
 	sound_manager = preload("res://src/ui/SoundManager.gd").new()
 	sound_manager.name = "SoundManager"
 	add_child(sound_manager)
+	effect_layer = preload("res://src/ui/EffectLayer.gd").new()
+	effect_layer.name = "EffectLayer"
+	add_child(effect_layer)
 	grid_renderer = $GridRenderer
 	chain_counter = $ChainCounter
 	total_counter = $TotalCounter
@@ -114,24 +119,34 @@ func _on_cell_clicked(coord: Vector2i) -> void:
 func _on_execute() -> void:
 	grid_renderer.select_card(-1)  # T2.2: 演化后不得残留选中, 防止误点网格误打旧索引手牌
 	_sound_chain = GameManager.chain_total  # T3.3: 本次演化的音高从当前连锁数起算
+	_effect_level = 2
 	GameManager.execute()
 
 func _on_speed() -> void:
 	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	_sound_chain = GameManager.chain_total
+	_effect_level = 1
 	GameManager.execute(4.0)  # T1.3: 4x 加速
 
 func _on_skip() -> void:
 	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	_sound_chain = GameManager.chain_total
+	_effect_level = 0
 	GameManager.execute(0.0)  # T1.3: 跳过动画, 同步结算
 
 func _on_reaction(_r) -> void:
 	_sound_chain += 1
 	if sound_manager != null:
 		sound_manager.play_chain(_sound_chain)
+	if effect_layer != null and _effect_level > 0:
+		# 4x 降级为每 3 次反应一个爆点; 跳过档完全关闭
+		if _effect_level == 2 or _sound_chain % 3 == 0:
+			for c in _r.affected:
+				effect_layer.reaction_burst(grid_renderer.cell_center(c))
+		if _sound_chain in [10, 50, 100, 500, 1000]:
+			effect_layer.milestone(_sound_chain)
 	grid_renderer.queue_redraw()
-	chain_counter.set_chain(GameManager.chain_total)
+	chain_counter.set_chain(_sound_chain)
 
 func _on_game_over(won: bool, msg: String) -> void:
 	if won:

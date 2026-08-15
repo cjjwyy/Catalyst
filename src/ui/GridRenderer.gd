@@ -259,6 +259,9 @@ func world_to_coord(wp: Vector2) -> Vector2i:
 		return Vector2i(-1, -1)
 	return Vector2i(x, y)
 
+func cell_center(coord: Vector2i) -> Vector2:
+	return GRID_OFFSET + Vector2(coord.x + 0.5, coord.y + 0.5) * cell_size
+
 func _unhandled_input(event: InputEvent) -> void:
 	if grid == null:
 		return
