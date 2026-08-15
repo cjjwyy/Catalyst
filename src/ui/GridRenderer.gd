@@ -82,6 +82,7 @@ var selected_card_idx: int = -1
 var selected_card_radius: int = 1
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var flash_cells: Dictionary = {}  # coord -> flash_start_ms
+var preview_cells: Array = []  # T3.7: 预演预计受影响格, 绘制蓝紫高亮
 
 signal cell_clicked(coord: Vector2i)
 signal cell_right_clicked(coord: Vector2i)
@@ -104,6 +105,14 @@ func select_card(idx: int) -> void:
 
 func on_flash(coord: Vector2i) -> void:
 	flash_cells[coord] = Time.get_ticks_msec()
+	queue_redraw()
+
+func set_preview_cells(cells: Array) -> void:
+	preview_cells = cells.duplicate()
+	queue_redraw()
+
+func clear_preview() -> void:
+	preview_cells.clear()
 	queue_redraw()
 
 func _draw() -> void:
@@ -174,6 +183,11 @@ func _draw() -> void:
 			draw_rect(rr, Color(1, 1, 0.5), false, 2)
 		var rect = Rect2(GRID_OFFSET + Vector2(hover_cell.x, hover_cell.y) * cell_size, Vector2(cell_size, cell_size))
 		draw_rect(rect, Color(1, 1, 0.4), false, 3)
+	# T3.7: 预演预计受影响格(蓝紫高亮)
+	for pc in preview_cells:
+		var pr = Rect2(GRID_OFFSET + Vector2(pc.x, pc.y) * cell_size, Vector2(cell_size, cell_size))
+		draw_rect(pr, Color(0.45, 0.35, 0.9, 0.28), true)
+		draw_rect(pr, Color(0.65, 0.55, 1.0), false, 2)
 	# 链式反馈: 闪烁白块
 	var now = Time.get_ticks_msec()
 	var expired: Array = []

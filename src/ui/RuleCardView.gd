@@ -52,6 +52,8 @@ const CN = {
 }
 
 func _element_texture(elem: int) -> Texture2D:
+	if elem == Element.NONE:
+		return load("res://assets/empty.png")
 	var key: String = Element.NAMES.get(elem, "empty").to_lower()
 	return load("res://assets/%s.png" % key)
 

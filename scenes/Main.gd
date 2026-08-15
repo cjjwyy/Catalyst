@@ -22,6 +22,7 @@ var retry_button: Button
 var menu_button: Button
 var save_button: Button
 var undo_button: Button
+var preview_button: Button
 var save_dialog: PanelContainer = null
 var save_name_edit: LineEdit = null
 var card_views: Array = []
@@ -68,6 +69,14 @@ func _ready() -> void:
 	undo_button.focus_mode = Control.FOCUS_ALL
 	undo_button.pressed.connect(_on_undo)
 	add_child(undo_button)
+	preview_button = Button.new()
+	preview_button.name = "PreviewButton"
+	preview_button.text = "预演(1能量)"
+	preview_button.position = Vector2(1300, 781)
+	preview_button.size = Vector2(160, 26)
+	preview_button.focus_mode = Control.FOCUS_ALL
+	preview_button.pressed.connect(_on_preview)
+	add_child(preview_button)
 	next_button.visible = false
 	retry_button.visible = false
 	execute_button.pressed.connect(_on_execute)
@@ -114,6 +123,7 @@ func _refresh() -> void:
 	# T1.4: 演化中/结算后禁止存档, 布局阶段可存档
 	save_button.disabled = (GameManager.phase == 2) or GameManager.game_ended
 	undo_button.disabled = not GameManager.can_undo()
+	preview_button.disabled = (GameManager.phase != 1) or GameManager.pillars.is_empty() or GameManager.energy.current < 1 or GameManager.game_ended
 
 func _phase_name(p: int) -> String:
 	match p:
@@ -133,25 +143,37 @@ func _on_cell_clicked(coord: Vector2i) -> void:
 	if grid_renderer.selected_card_idx < 0:
 		return
 	if GameManager.play_card(grid_renderer.selected_card_idx, coord):
+		grid_renderer.clear_preview()
 		grid_renderer.select_card(-1)
 
 func _on_execute() -> void:
+	grid_renderer.clear_preview()
 	grid_renderer.select_card(-1)  # T2.2: 演化后不得残留选中, 防止误点网格误打旧索引手牌
 	_sound_chain = GameManager.chain_total  # T3.3: 本次演化的音高从当前连锁数起算
 	_effect_level = 2
 	GameManager.execute()
 
 func _on_speed() -> void:
+	grid_renderer.clear_preview()
 	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	_sound_chain = GameManager.chain_total
 	_effect_level = 1
 	GameManager.execute(4.0)  # T1.3: 4x 加速
 
 func _on_undo() -> void:
+	grid_renderer.clear_preview()
 	if GameManager.undo_turn():
 		grid_renderer.select_card(-1)
 
+func _on_preview() -> void:
+	var result: Dictionary = GameManager.preview_evolution()
+	if result.is_empty():
+		return
+	grid_renderer.set_preview_cells(result.get("affected", []))
+	status_label.text = "预演: 预计 +%d 连锁, %d 格受影响" % [result.get("chain_delta", 0), result.get("affected", []).size()]
+
 func _on_skip() -> void:
+	grid_renderer.clear_preview()
 	grid_renderer.select_card(-1)  # T2.2: 同执行按钮
 	_sound_chain = GameManager.chain_total
 	_effect_level = 0

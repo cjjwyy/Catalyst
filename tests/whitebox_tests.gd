@@ -63,6 +63,7 @@ func _initialize() -> void:
 		["TC-20", "手牌区宽度容量", tc20_手牌区宽度容量],
 		["TC-32", "卡面场景与手动保留", tc32_卡面与手动保留],
 		["TC-33", "回合撤销快照", tc33_回合撤销],
+		["TC-34", "预演不改真实状态", tc34_预演],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -221,7 +222,7 @@ func tc05_主要按钮键盘可聚焦() -> void:
 		_check(false, "GameOverPanel 节点缺失: Main.tscn 第125-166行文本编码损坏导致解析错乱(MenuButton.text 被错解析为'重试'), 通关/失败界面及下一关/重试按钮运行时不可用 —— 属待修复缺陷")
 		main.free()
 		return
-	for path in ["HelpButton", "ExecuteButton", "MenuButton", "UndoButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
+	for path in ["HelpButton", "ExecuteButton", "MenuButton", "UndoButton", "PreviewButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
 		var btn = main.get_node_or_null(path)
 		_check(btn != null, "场景缺少按钮节点 %s" % path)
 		if btn != null:
@@ -803,6 +804,33 @@ func tc33_回合撤销() -> void:
 		_check(_gm.hand.hand_size() == hand_before, "撤销后手牌=%d, 期望 %d" % [_gm.hand.hand_size(), hand_before])
 		_check(_gm.energy.current == energy_before, "撤销后能量=%d, 期望 %d" % [_gm.energy.current, energy_before])
 	_check(_gm.can_undo() == false, "快照栈耗尽后仍可撤销")
+
+# ---------- TC-34 (T3.7) ----------
+func tc34_预演() -> void:
+	_gm.start_game(0)
+	var planted := 0
+	for c in _gm.grid.all_cells():
+		if planted < 40:
+			c.element = Element.WATER if planted % 2 == 0 else Element.LAVA
+			planted += 1
+	var card = _make_rule_card({"id": "steamify", "kind": "TRANSFORM", "trigger_element": "WATER",
+		"contact_element": "LAVA", "result_element": "STEAM", "self_replace": "STONE",
+		"radius": 5, "life": 4, "chain_reward": 1})
+	_gm.pillars.clear()
+	var p = _pillar(card, 4, 4)
+	_gm.pillars.append(p)
+	_gm.grid.get_cell(p.coord).pillar = p
+	var hash_before: String = _grid_hash(_gm.grid)
+	var energy_before: int = _gm.energy.current
+	var result: Dictionary = _gm.preview_evolution()
+	_check(not result.is_empty(), "预演未返回结果")
+	_check(int(result.get("chain_delta", 0)) > 0, "预演连锁=%d, 期望 >0" % int(result.get("chain_delta", 0)))
+	_check((result.get("affected", []) as Array).size() > 0, "预演受影响格为空")
+	_check(_gm.energy.current == energy_before - 1, "预演后能量=%d, 期望 %d (消耗1能量)" % [_gm.energy.current, energy_before - 1])
+	_check(_grid_hash(_gm.grid) == hash_before, "预演不应修改真实网格")
+	_check(_gm.chain_total == 0, "预演不应累加真实连锁")
+	await _gm.execute()
+	_check(_gm.chain_total == int(result.get("chain_delta", -1)), "真实执行连锁=%d, 应与预演=%d 一致(同rng分叉)" % [_gm.chain_total, int(result.get("chain_delta", -1))])
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:

@@ -124,6 +124,49 @@ func undo_turn() -> bool:
 	state_changed.emit()
 	return true
 
+
+# T3.7: 预演"我算到了" —— 耗 1 能量, 在副本网格上同步跑一遍当前布局, 不改真实网格
+func preview_evolution() -> Dictionary:
+	if phase != Phase.LAYOUT or game_ended or grid == null or pillars.is_empty():
+		return {}
+	if not energy.can_play():
+		return {}
+	var sim := _clone_game_for_preview()
+	var preview_rng := RandomNumberGenerator.new()
+	preview_rng.seed = rng.seed
+	preview_rng.state = rng.state  # 从当前随机流分叉, 预演不消耗真实 rng
+	var runner := ChainReaction.new()
+	var affected: Dictionary = {}
+	runner.reaction_applied.connect(func(r):
+		for c in r.affected:
+			affected[c] = true)
+	var chain: int = runner.execute(sim["grid"], sim["pillars"], turn, preview_rng)
+	energy.spend()
+	state_changed.emit()
+	return {"chain_delta": chain, "affected": affected.keys()}
+
+func _clone_game_for_preview() -> Dictionary:
+	var src: Grid = grid
+	var g := Grid.new(src.w, src.h)
+	for sc in src.all_cells():
+		var dc = g.get_cell(sc.coord)
+		dc.element = sc.element
+		dc.placed_at_turn = sc.placed_at_turn
+		dc.decay_timer = sc.decay_timer
+		dc.states = sc.states.duplicate()
+		dc.frozen_original = sc.frozen_original
+		dc.was_burning = sc.was_burning
+		dc.was_meteor = sc.was_meteor
+	var cloned_pillars: Array = []
+	for p in pillars:
+		var np := RulePillar.new(p.card, p.coord, turn)
+		np.life_remaining = p.life_remaining
+		cloned_pillars.append(np)
+		var pc = g.get_cell(np.coord)
+		if pc != null:
+			pc.pillar = np
+	return {"grid": g, "pillars": cloned_pillars}
+
 func _auto_retain() -> void:
 	while hand.hand_size() > RETAIN_LIMIT:
 		hand.discard_from_hand(_worst_card_idx())
