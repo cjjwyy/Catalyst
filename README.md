@@ -203,7 +203,7 @@ docs/         策划、规格、计划、路线图
 
 > 完整清单与修复方案见 [docs/开发路线图与行动指南.md](docs/开发路线图与行动指南.md)。
 
-- **空/损坏 `rules.json`**:玩家死锁(TC-23b);非法 `kind` 字段使 `RuleCard.from_dict` 中断(TC-25)。
+- **非法 `kind` 字段**:使 `RuleCard.from_dict` 中断(TC-25)。
 - **FROZEN 语义不完整**:不阻挡增殖扩散目标(TC-30a);MULTIPLY 时间戳语义偏差(TC-30b)。
 - **音效/粒子**:未实装(策划文档已规划)。
 

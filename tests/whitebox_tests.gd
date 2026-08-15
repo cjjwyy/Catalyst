@@ -5,7 +5,7 @@
 # 编号说明: 人工审查版 md 中存在重复编号 (TC-23/TC-26/TC-28 各 2 条, TC-30 3 条),
 #   本脚本以 a/b/c 后缀去重, 与 md 行内容一一对应 (TC-23a=帮助文本高度, TC-23b=空规则文件, ...)。
 # 已知缺陷用例 (当前必然失败, 用于回归验证修复): TC-04 (帮助文本乱码), TC-19 (图例缺孢/冰)。
-# 现状记录用例 (断言当前行为, 通过即记录缺陷, 修复后需更新断言): TC-13, TC-23b, TC-28b, TC-30a, TC-30b。
+# 现状记录用例 (断言当前行为, 通过即记录缺陷, 修复后需更新断言): TC-25 部分, TC-30a, TC-30b。
 extends SceneTree
 
 const RULES_PATH := "res://data/rules.json"
@@ -65,7 +65,7 @@ func _initialize() -> void:
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
 		["TC-23a", "帮助文本不溢出面板", tc23a_帮助文本不溢出],
-		["TC-23b", "空规则文件降级死锁现状", tc23b_空规则文件降级],
+		["TC-23b", "空规则文件降级", tc23b_空规则文件降级],
 		["TC-25", "非法字段静默降级", tc25_非法字段降级],
 		["TC-26a", "界外点击与越界坐标", tc26a_界外点击],
 		["TC-26b", "半径扫描边界格数", tc26b_半径边界格数],
@@ -828,28 +828,51 @@ func tc23a_帮助文本不溢出() -> void:
 		_check(sz.y <= label.size.y, "帮助文本渲染高度=%0.0fpx, 期望 <=%0.0f (HelpLabel 实际高度, 文本不溢出面板)" % [sz.y, label.size.y])
 	main.free()
 
-# ---------- TC-23b (现状记录) ----------
+# ---------- TC-23b ----------
 func tc23b_空规则文件降级() -> void:
 	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
 	var backup := f.get_as_text()
 	f.close()
 	var restored := false
-	# 空数组
+	# 空数组: 合法 JSON 但没有牌 → 内置 DEFAULT_RULES 降级, 仍可玩
 	var wf = FileAccess.open(RULES_PATH, FileAccess.WRITE)
 	wf.store_string("[]")
 	wf.close()
 	var rules: Array = _gm._load_rules()
-	_check(rules.is_empty(), "规则文件=[] 时 _load_rules 应返回空数组, 实际 %d 张" % rules.size())
+	_check(rules.size() == 3, "规则文件=[] 时 _load_rules 应降级为 3 张内置牌, 实际 %d 张" % rules.size())
 	_gm.start_game(0)
-	_check(_gm.hand.hand_size() == 0, "空规则文件开局手牌=%d, 期望 0" % _gm.hand.hand_size())
+	_check(_gm.hand.hand_size() == 5, "空规则文件开局手牌=%d, 期望 5 (DEFAULT_RULES 可玩)" % _gm.hand.hand_size())
 	_check(_gm.energy.current == 3, "空规则文件开局能量=%d, 期望 3" % _gm.energy.current)
-	_check(_gm.can_play_card() == false, "can_play_card=%s, 期望 false (手牌空 -> 玩家死锁, 仅主菜单可退; 现状记录, 修复降级后更新断言)" % _gm.can_play_card())
-	# 损坏 JSON
+	_check(_gm.can_play_card() == true, "can_play_card=%s, 期望 true (降级牌组不再死锁)" % _gm.can_play_card())
+	_check(_gm.game_ended == false, "空规则文件降级后 game_ended=%s, 期望 false" % _gm.game_ended)
+	# 损坏 JSON: 明确失败提示, 不再静默死锁
 	wf = FileAccess.open(RULES_PATH, FileAccess.WRITE)
 	wf.store_string("{bad json")
 	wf.close()
+	_tc_got = false
+	_tc_msg = ""
+	_gm.game_over.connect(func(won: bool, msg: String) -> void:
+		_tc_got = true
+		_tc_msg = msg, CONNECT_ONE_SHOT)
 	rules = _gm._load_rules()
-	_check(rules.is_empty(), "损坏 JSON 时 _load_rules 应返回空数组, 实际 %d 张" % rules.size())
+	_check(rules.is_empty(), "损坏 JSON 时 _load_rules 应返回空数组(明确失败), 实际 %d 张" % rules.size())
+	_check(_tc_got, "损坏 JSON 未发出 game_over 失败提示")
+	_check(_tc_msg.contains("规则数据损坏"), "损坏 JSON 提示=%s, 期望含'规则数据损坏'" % _tc_msg)
+	_gm.start_game(0)
+	_check(_gm.game_ended == true, "损坏 JSON 开局 game_ended=%s, 期望 true (明确失败)" % _gm.game_ended)
+	_check(_gm.phase == GameManager.Phase.EVOLVE, "损坏 JSON 开局 phase=%d, 期望 EVOLVE" % _gm.phase)
+	_check(_gm.can_play_card() == false, "损坏 JSON 开局 can_play_card=%s, 期望 false" % _gm.can_play_card())
+	# 关卡 JSON 尺寸/target 钳制与字段容错
+	var lvl_path := "user://test_level_clamp.json"
+	var lf = FileAccess.open(lvl_path, FileAccess.WRITE)
+	lf.store_string('{"size":[100,-2],"target":-5,"elements":[{"coord":[999,999],"element":"WATER"},{"coord":["x","y"],"element":"QQQ"}]}')
+	lf.close()
+	_gm.target = 0
+	var g: Grid = _gm._load_level(lvl_path)
+	_check(g.w == 32 and g.h == 6, "关卡 size=[100,-2] 应钳制为 32x6, 实际 %dx%d" % [g.w, g.h])
+	_check(_gm.target == 1, "关卡 target=-5 应钳制为 1, 实际 %d" % _gm.target)
+	_check(g.count_element(Element.WATER) == 0, "越界/非法元素条目应被跳过, 实际 WATER=%d" % g.count_element(Element.WATER))
+	_cleanup_save(lvl_path)
 	# 恢复
 	wf = FileAccess.open(RULES_PATH, FileAccess.WRITE)
 	wf.store_string(backup)
@@ -857,8 +880,8 @@ func tc23b_空规则文件降级() -> void:
 	restored = true
 	_gm.start_game(0)
 	_check(_gm.hand.hand_size() == 5, "恢复规则文件后手牌=%d, 期望 5 (文件恢复成功)" % _gm.hand.hand_size())
+	_check(_gm.game_ended == false, "恢复规则文件后 game_ended=%s, 期望 false" % _gm.game_ended)
 	_check(restored, "规则文件未能恢复, 数据文件处于损坏状态!")
-
 # ---------- TC-25 ----------
 func tc25_非法字段降级() -> void:
 	# kind 需合法 (非法 kind 字符串会触发 Kind.get 返回 null 赋 int 的运行时错误,

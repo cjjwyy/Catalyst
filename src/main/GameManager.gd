@@ -35,6 +35,7 @@ var energy: EnergySystem
 var all_card_defs: Array = []
 var save_manager: SaveManager = SaveManager.new()
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确定性: 游戏逻辑随机源, 可播种(种子化 T3.8 的前置)
+var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
 
 signal state_changed
 signal reaction_applied(reaction)
@@ -75,7 +76,7 @@ func start_game(level_idx: int = -1) -> void:
 	if level_idx >= 0:
 		level_manager.current_level = level_idx
 	var lvl = level_manager.get_current()
-	target = int(lvl.target)
+	target = clampi(int(lvl.get("target", 100)), 1, 99999)
 	_prepare_card_defs(level_manager.current_level)
 	grid = _load_level(lvl.path)
 	hand = HandManager.new()
@@ -86,6 +87,10 @@ func start_game(level_idx: int = -1) -> void:
 	dead_turns = 0
 	game_ended = false
 	phase = Phase.LAYOUT
+	if not rules_data_error.is_empty():
+		# T2.3: 规则数据损坏时已 emit game_over, 这里同步置位, 不让 UI/逻辑落入静默死锁
+		game_ended = true
+		phase = Phase.EVOLVE
 	_reroll_wind()
 	state_changed.emit()
 
@@ -209,17 +214,50 @@ func _ids_to_cards(ids: Array, card_by_id: Dictionary) -> Array:
 func _load_rules() -> Array:
 	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
 	if f == null:
-		push_warning("无法打开 %s" % RULES_PATH)
+		rules_data_error = "无法打开 %s" % RULES_PATH
+		push_error("规则数据损坏: %s" % rules_data_error)
+		game_over.emit(false, "规则数据损坏,请重新下载游戏")
 		return []
 	var txt = f.get_as_text()
 	f.close()
 	var data = JSON.parse_string(txt)
 	if typeof(data) != TYPE_ARRAY:
+		rules_data_error = "JSON 解析失败或根节点不是数组"
+		push_error("规则数据损坏: %s" % rules_data_error)
+		game_over.emit(false, "规则数据损坏,请重新下载游戏")
 		return []
+	rules_data_error = ""
 	var out: Array = []
 	for entry in data:
+		if typeof(entry) != TYPE_DICTIONARY:
+			push_warning("rules.json 中存在非对象条目, 已跳过")
+			continue
 		var c = RuleCard.new()
 		c.from_dict(entry)
+		out.append(c)
+	if out.is_empty():
+		push_warning("rules.json 为空或无有效规则牌, 启用内置降级牌组")
+		return _default_rules()
+	return out
+
+func _default_rules() -> Array:
+	var defs := [
+		{"id": "steamify", "name": "蒸汽化", "kind": "TRANSFORM",
+			"trigger_element": "WATER", "contact_element": "LAVA",
+			"result_element": "STEAM", "self_replace": "STONE",
+			"radius": 2, "life": 4, "chain_reward": 1},
+		{"id": "grow", "name": "加速生长", "kind": "MULTIPLY",
+			"trigger_element": "PLANT", "contact_element": "STEAM",
+			"result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1},
+		{"id": "extinct", "name": "丛林灭绝", "kind": "EXTINCTION",
+			"trigger_element": "PLANT", "result_element": "NONE",
+			"radius": 2, "life": 4, "extinct_threshold": 5,
+			"also_count": "GRASS", "also_clear": "STEAM", "chain_reward": 1},
+	]
+	var out: Array = []
+	for d in defs:
+		var c = RuleCard.new()
+		c.from_dict(d)
 		out.append(c)
 	return out
 
@@ -228,23 +266,44 @@ func _load_level(path: String) -> Grid:
 	var f = FileAccess.open(path, FileAccess.READ)
 	if f == null:
 		push_warning("无法打开 %s,使用默认 6x6" % path)
+		target = clampi(target, 1, 99999)
 		return Grid.new(6, 6)
 	var txt = f.get_as_text()
 	f.close()
 	var data = JSON.parse_string(txt)
 	if typeof(data) != TYPE_DICTIONARY:
+		push_warning("关卡 JSON 无效 %s,使用默认 6x6" % path)
+		target = clampi(target, 1, 99999)
 		return Grid.new(6, 6)
 	_parse_chaos_elements(data)
+	var w := 6
+	var h := 6
 	var size = data.get("size", [6, 6])
-	var g = Grid.new(int(size[0]), int(size[1]))
+	if typeof(size) == TYPE_ARRAY and size.size() >= 2:
+		w = clampi(int(size[0]), 6, 32)
+		h = clampi(int(size[1]), 6, 32)
+	else:
+		push_warning("关卡 %s 缺少合法 size, 使用默认 6x6" % path)
+	var raw_target = data.get("target")
+	if typeof(raw_target) == TYPE_INT or typeof(raw_target) == TYPE_FLOAT:
+		target = clampi(int(raw_target), 1, 99999)
+	else:
+		target = clampi(target, 1, 99999)
+	var g = Grid.new(w, h)
 	var elems = data.get("elements", [])
+	if typeof(elems) != TYPE_ARRAY:
+		return g
 	for entry in elems:
-		var coord = entry["coord"]
-		var c = g.get_cell(Vector2i(int(coord[0]), int(coord[1])))
-		if c == null:
+		if typeof(entry) != TYPE_DICTIONARY:
 			continue
-		c.element = Element.from_string(entry["element"])
-		c.placed_at_turn = 0
+		var coord = entry.get("coord")
+		if typeof(coord) != TYPE_ARRAY or coord.size() < 2:
+			continue
+		var cell = g.get_cell(Vector2i(int(coord[0]), int(coord[1])))
+		if cell == null:
+			continue
+		cell.element = Element.from_string(str(entry.get("element", "NONE")))
+		cell.placed_at_turn = 0
 	return g
 
 func _parse_chaos_elements(data: Dictionary) -> void:
