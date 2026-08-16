@@ -21,20 +21,24 @@ func execute(grid: Grid, pillars: Array, turn: int = 0, rng: RandomNumberGenerat
 	var seen: Dictionary = {}
 	var reactions = engine.evaluate_restricted(grid, pillars, changed)
 	while not reactions.is_empty() and chain < MAX and not cancelled:
-		var snap := _snapshot(grid)
+		var snap := _snapshot_hash(grid)
 		if seen.has(snap):
 			break
 		seen[snap] = true
 		var new_changed: Array = []
 		var any_effect = false
+		var blessed_before: Dictionary = {}
+		for cc in grid.all_cells():
+			if cc.has_state(State.BLESSED):
+				blessed_before[cc.coord] = true
 		for r in reactions:
 			if cancelled:
 				return chain
-			var blessed_before: Dictionary = {}
-			for cc in grid.all_cells():
-				if cc.has_state(State.BLESSED):
-					blessed_before[cc.coord] = true
 			r.apply(grid, turn)
+			if r.card != null and r.card.add_state == State.BLESSED:
+				for bc in r.affected:
+					if grid.get_cell(bc) != null and grid.get_cell(bc).has_state(State.BLESSED):
+						blessed_before[bc] = true
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:
@@ -53,11 +57,11 @@ func execute(grid: Grid, pillars: Array, turn: int = 0, rng: RandomNumberGenerat
 		reactions = engine.evaluate_restricted(grid, pillars, new_changed)
 	return chain
 
-func _snapshot(grid: Grid) -> String:
+func _snapshot_hash(grid: Grid) -> int:
 	var s := ""
 	for c in grid.all_cells():
 		s += str(c.element) + ","
-	return s
+	return hash(s)
 
 func _spawn_dust(grid: Grid, rng: RandomNumberGenerator) -> void:
 	var empty_dust_cells: Array = []
@@ -87,20 +91,24 @@ func execute_async(grid: Grid, pillars: Array, frame_delay: float = 0.1, speed: 
 	var seen: Dictionary = {}
 	var reactions = engine.evaluate_restricted(grid, pillars, changed)
 	while not reactions.is_empty() and chain < MAX and not cancelled:
-		var snap := _snapshot(grid)
+		var snap := _snapshot_hash(grid)
 		if seen.has(snap):
 			break
 		seen[snap] = true
 		var new_changed: Array = []
 		var any_effect = false
+		var blessed_before: Dictionary = {}
+		for cc in grid.all_cells():
+			if cc.has_state(State.BLESSED):
+				blessed_before[cc.coord] = true
 		for r in reactions:
 			if cancelled:
 				return chain
-			var blessed_before: Dictionary = {}
-			for cc in grid.all_cells():
-				if cc.has_state(State.BLESSED):
-					blessed_before[cc.coord] = true
 			r.apply(grid, turn)
+			if r.card != null and r.card.add_state == State.BLESSED:
+				for bc in r.affected:
+					if grid.get_cell(bc) != null and grid.get_cell(bc).has_state(State.BLESSED):
+						blessed_before[bc] = true
 			if r.affected.size() > 0 and chain > 0 and chain % 5 == 0:
 				_spawn_dust(grid, rng)
 			if r.affected.size() > 0:

@@ -1,6 +1,26 @@
 class_name RuleEngine
 extends RefCounted
 
+# T4.2: 尘团块组件缓存; 尘布局签名不变时不重算 flood-fill
+var _dust_cache_signature: String = ""
+var _dust_cache: Dictionary = {}
+
+func _dust_signature(grid: Grid) -> String:
+	var sig := ""
+	for c in grid.all_cells():
+		if c.has_state(State.DUST):
+			sig += str(c.coord.x) + "," + str(c.coord.y) + ";"
+	return sig
+
+func _compute_components_cached(grid: Grid) -> Dictionary:
+	var sig := _dust_signature(grid)
+	if sig == _dust_cache_signature:
+		return _dust_cache
+	var comp := _compute_components(grid)
+	_dust_cache_signature = sig
+	_dust_cache = comp
+	return comp
+
 # 检测所有可触发的 Reaction(全量扫描)
 func evaluate(grid: Grid, pillars: Array) -> Array:
 	var out: Array = []
@@ -111,7 +131,7 @@ func _expand_scope_for_dust(grid: Grid, scope: Array) -> Array:
 			has_dust = true
 	if not has_dust:
 		return expanded
-	var components = _compute_components(grid)
+	var components = _compute_components_cached(grid)
 	for c in scope:
 		if c.has_state(State.DUST) and components.has(c.coord):
 			var cid = components[c.coord]
