@@ -5,8 +5,9 @@
 玩家在网格上放置"规则柱"激活元素连锁反应。详见 `docs/Catalyst-规划.md` (原始策划) 与 `docs/superpowers/specs/` 下各阶段规格。
 
 ## 当前阶段
-**第四阶段(已完成)**: 多关卡系统 + 燃烧/孢子(第2关) + 冰晶/覆雪/冻结(第3关) + 祝福/天灾(第4关)。
-1-4 关全部可玩: 10×10 → 12×12 → 14×14 → 16×16, 目标 100/300/700/1500。
+**第五阶段(已完成)**: 1-4 关(海岸/丛林/高山/火山口)+ 第5关(深渊)。
+5 关全部可玩: 10×10 → 12×12 → 14×14 → 16×16 → 18×18, 目标 100/300/700/1500/3000。
+工程化: WorldRules 拆分、性能缓存、入口 i18n、关卡 goals 星级、CI/导出预设。
 后续方向见 `docs/开发路线图与行动指南.md`。
 
 ## 技术栈
@@ -25,7 +26,7 @@ src/main/    GameManager (Autoload 总控) + LevelManager
 src/world/   LevelManager (关卡管理)
 data/        JSON 配置 (rules.json + levels/*.json)
 scenes/      .tscn 场景
-tests/       GDScript 自检 (run_tests.gd 36 条 + whitebox_tests.gd 44 条 + 白盒测试用例.md)
+tests/       GDScript 自检 (run_tests.gd 36 条 + whitebox_tests.gd 47 条 + 白盒测试用例.md)
 ```
 
 ## 核心判定机制
@@ -51,8 +52,8 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 ## 关键参数
 | 参数 | 值 |
 |------|----|
-| 关卡数 | 4 (10/12/14/16) |
-| 手牌池 | 8 通用(含「干涸」;蒸汽化/加速生长各×3)+ 2 孢子(第2关)+ 2 冰(第3关)+ 2 祝福/陨石(第4关)= 14 种定义 |
+| 关卡数 | 5 (10/12/14/16/18), 目标 100/300/700/1500/3000 |
+| 手牌池 | 8 通用 + 2 孢子 + 2 冰 + 2 祝福/陨石 + 3 深渊(过热蒸汽/灰烬转化/深渊净化)= 17 种定义;第5关牌池20 |
 | 初始手牌 | 5 |
 | 手牌上限 | 8 (超限抽牌进弃牌堆, 抽牌堆耗尽时弃牌堆循环重洗) |
 | 每回合抽牌 | 3(回合结束进入保留阶段, 手动点击弃牌到 3 张; headless 自动保留) |
@@ -61,7 +62,7 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 | 催化剂尘:播撒 | 每 5 连锁 3 粒, 持续 5 回合 |
 | 连锁上限 | 1000 |
 | 死寂阈值 | 10 回合 |
-| EXTINCTION 阈值 | 半径内 5 个 |
+| EXTINCTION 阈值 | 通常半径内 5 个(深渊净化为 1 个) |
 | 尘/孢子边界 | 越界消失 |
 
 ## 元素与状态
@@ -80,10 +81,11 @@ evaluate → 执行所有 Reaction → 记录 affected → evaluate_restricted(�
 | ICE | 冰 | | |
 
 > 阶段3体验层(2026-08): 音效/粒子/卡面场景/保留/撤销/预演/种子回放/每日挑战/复制种子/6页帮助/首次5步引导 均已实装。
+> 阶段4工程层(2026-08): WorldRules 拆分/尘缓存/快照哈希/入口i18n/第5关/goals星级/CI导出 均已实装。
 
 ## 验证约定
 - `tests/run_tests.gd` 36 个 assert 用例, GameManager 启动时跑
-- `tests/whitebox_tests.gd` 44 条白盒用例(headless 跑: `godot --headless --path . --script res://tests/whitebox_tests.gd`, 可用 `-- --filter=TC-06`);"现状记录"用例断言当前(有缺陷)行为, 修复缺陷后需同步更新断言
+- `tests/whitebox_tests.gd` 47 条白盒用例(headless 跑: `godot --headless --path . --script res://tests/whitebox_tests.gd`, 可用 `-- --filter=TC-06`);"现状记录"用例断言当前(有缺陷)行为, 修复缺陷后需同步更新断言
 - 测试环境注意: 本机沙箱需重定向 APPDATA(`$env:APPDATA='<工作区>\.godot-user'`)否则 Godot 写 user:// 日志会崩溃; 游戏逻辑随机与催化剂尘走 `GameManager.rng`(可播种), 手牌洗牌仍走全局 seed();白盒启动先等 autoload `_ready` 再定种
 - 修规则/引擎 → 同处补 test
 - 渲染/UI 逻辑可入白盒, 视觉观感不测
