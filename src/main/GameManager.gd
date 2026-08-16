@@ -7,6 +7,7 @@ const RETAIN_LIMIT = 3  # T3.5: 回合结束保留至多 3 张
 const RULES_PATH = "res://data/rules.json"
 const LEVEL_PATH = "res://data/coast.json"
 const TestsScript = preload("res://tests/run_tests.gd")
+const WorldRulesScript = preload("res://src/world/WorldRules.gd")
 
 const DIR_VECTORS = [
 	Vector2i(0, -1),   # 0=N
@@ -608,124 +609,8 @@ func chaos_check() -> void:
 				return
 
 func _world_rules() -> void:
-	for c in grid.all_cells():
-		if c.element == Element.STEAM and turn - c.placed_at_turn >= 2:
-			c.element = Element.NONE
-			c.placed_at_turn = turn
-	for c in grid.all_cells():
-		if c.element == Element.GRASS:
-			var has_friend = false
-			for n in grid.neighbors(c.coord):
-				if n.element in [Element.PLANT, Element.GRASS]:
-					has_friend = true
-					break
-			if not has_friend:
-				c.decay_timer += 1
-			else:
-				c.decay_timer = 0
-			if c.decay_timer >= 2:
-				c.element = Element.EARTH
-				c.decay_timer = 0
-				c.placed_at_turn = turn
-		elif c.element == Element.EARTH and turn - c.placed_at_turn >= 2:
-			c.element = Element.STONE
-			c.placed_at_turn = turn
-	var empty: Array = []
-	for c in grid.all_cells():
-		if c.element == Element.NONE:
-			empty.append(c)
-	var count = min(2, empty.size())
-	for _i in range(count):
-		var c = empty.pop_at(_randi(empty.size()))
-		c.element = Element.WATER if _randi(2) == 0 else Element.STONE
-		c.placed_at_turn = turn
-	# 4. 燃烧蔓延: 植物相邻熔岩→点燃; 燃烧蔓延相邻植物
-	for c in grid.all_cells():
-		if c.element == Element.PLANT and not c.has_state(State.BURNING):
-			for n in grid.neighbors(c.coord):
-				if n.element == Element.LAVA:
-					c.add_state(State.BURNING, 2)
-					break
-	for c in grid.all_cells():
-		if c.has_state(State.BURNING):
-			for n in grid.neighbors(c.coord):
-				if n.element == Element.PLANT and not n.has_state(State.BURNING):
-					n.add_state(State.BURNING, 2)
-	# 5. was_burning 检查: BURNING 衰减后植物烧完
-	for c in grid.all_cells():
-		if c.was_burning:
-			if c.element == Element.PLANT:
-				c.element = Element.NONE
-				c.placed_at_turn = turn
-			c.was_burning = false
-	# 6. 孢子飘散: 随风向移动 1 格, 越界消失
-	var spore_dir = DIR_VECTORS[wind_dir]
-	var spore_moves: Array = []
-	for c in grid.all_cells():
-		if c.element == Element.SPORE:
-			var nx = c.coord + spore_dir
-			if not grid.is_in_bounds(nx):
-				spore_moves.append([c.coord, null])
-			else:
-				spore_moves.append([c.coord, nx])
-	for m in spore_moves:
-		var src = grid.get_cell(m[0])
-		src.element = Element.NONE
-		if m[1] != null:
-			var dst_cell = grid.get_cell(m[1])
-			if dst_cell.element == Element.NONE:
-				dst_cell.element = Element.SPORE
-				dst_cell.placed_at_turn = turn
-
-	# 7. 降雪: 随机1-2格(无SNOW) +SNOW
-	var sn_cells: Array = []
-	for c in grid.all_cells():
-		if not c.has_state(State.SNOW):
-			sn_cells.append(c)
-	for _i in range(min(2, sn_cells.size())):
-		sn_cells.pop_at(_randi(sn_cells.size())).add_state(State.SNOW, 2)
-	# 8. 雪化冰: SNOW+水→冰
-	for c in grid.all_cells():
-		if c.has_state(State.SNOW) and c.element == Element.WATER:
-			c.element = Element.ICE
-			c.remove_state(State.SNOW)
-			c.placed_at_turn = turn
-	# 9. 雪融: SNOW邻熔岩/汽→消散
-	for c in grid.all_cells():
-		if c.has_state(State.SNOW):
-			for n in grid.neighbors(c.coord):
-				if n.element in [Element.LAVA, Element.STEAM]:
-					c.remove_state(State.SNOW)
-					break
-	# 天灾事件 (仅第4关)
-	if level_manager.current_level == 3:
-		if _randi(100) < 30:
-			var event = _randi(3)
-			if event == 0:  # 陨石
-				var cells = grid.all_cells()
-				var c = cells[_randi(cells.size())]
-				c.element = Element.LAVA
-				c.add_state(State.METEOR_LAVA, 2)
-				c.placed_at_turn = turn
-			elif event == 1:  # 地震
-				var non_empty = grid.all_cells().filter(func(c2): return c2.element != Element.NONE)
-				for _i in range(min(2, non_empty.size())):
-					var sc = non_empty.pop_at(_randi(non_empty.size()))
-					sc.element = Element.NONE
-					sc.clear_states()
-			else:  # 火山喷发
-				var empties = grid.all_cells().filter(func(c2): return c2.element == Element.NONE)
-				if not empties.is_empty():
-					var c = empties[_randi(empties.size())]
-					c.element = Element.LAVA
-					c.placed_at_turn = turn
-	# METEOR_LAVA 衰减→熔岩变岩石
-	for c in grid.all_cells():
-		if c.was_meteor:
-			if c.element == Element.LAVA:
-				c.element = Element.STONE
-				c.placed_at_turn = turn
-			c.was_meteor = false
+	# T4.1: 世界规则已拆到 WorldRules.apply_all, 保留同名包装供测试与既有调用
+	WorldRulesScript.new().apply_all(grid, level_manager.current_level, turn, wind_dir, wind_speed, rng, pillars)
 
 func decay_pillars() -> void:
 	for p in pillars:
