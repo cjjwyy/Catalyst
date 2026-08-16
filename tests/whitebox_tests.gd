@@ -151,6 +151,10 @@ func tc01_关卡选择页可打开() -> void:
 		return
 	var buttons: Array = scene.buttons
 	_check(buttons.size() == 5, "按钮数=%d, 期望 5 (5 个关卡)" % buttons.size())
+	var bg = scene.get_node_or_null("BG")
+	var layout = scene.get_node_or_null("Layout")
+	_check(bg != null and layout != null and bg.get_index() < layout.get_index() and layout.z_index > bg.z_index,
+		"LevelSelect 背景覆盖UI: BG order=%d Layout order=%d z=%d/%d" % [bg.get_index() if bg else -1, layout.get_index() if layout else -1, layout.z_index if layout else -999, bg.z_index if bg else -999])
 	# T1.4: 解锁状态来自持久化进度(level_manager.unlocked), 按钮锁定 = idx > unlocked
 	var lm = _gm.level_manager
 	for i in range(buttons.size()):
@@ -162,7 +166,11 @@ func tc01_关卡选择页可打开() -> void:
 	var ss = load(SAVE_SELECT_SCENE).instantiate()
 	root.add_child(ss)
 	await self.process_frame
-	_check(ss.get_node_or_null("BG") != null, "SaveSelect 缺 BG 背景节点")
+	var ss_bg = ss.get_node_or_null("BG")
+	var ss_layout = ss.get_node_or_null("Layout")
+	_check(ss_bg != null, "SaveSelect 缺 BG 背景节点")
+	_check(ss_bg != null and ss_layout != null and ss_bg.get_index() < ss_layout.get_index() and ss_layout.z_index > ss_bg.z_index,
+		"SaveSelect 背景覆盖UI: BG order=%d Layout order=%d z=%d/%d" % [ss_bg.get_index() if ss_bg else -1, ss_layout.get_index() if ss_layout else -1, ss_layout.z_index if ss_layout else -999, ss_bg.z_index if ss_bg else -999])
 	ss.free()
 	# T3.8: 关卡选择页种子输入/锁定/清除/每日挑战控件
 	scene = load(LEVEL_SELECT_SCENE).instantiate()
