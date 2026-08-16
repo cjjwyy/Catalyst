@@ -35,8 +35,9 @@ var hand: HandManager
 var energy: EnergySystem
 var all_card_defs: Array = []
 var save_manager: SaveManager = SaveManager.new()
-var auto_retention: bool = true  # T3.5: true=headless/自动保留测试模式; Main 开启手动保留 UI
-var rng: RandomNumberGenerator = RandomNumberGenerator.new()  # T1.2 测试确定性: 游戏逻辑随机源, 可播种(种子化 T3.8 的前置)
+var auto_retention: bool = true  # T3.5
+var game_seed: int = 0  # T3.8: 当前局种子; 0=未显式锁定
+var rng: RngService = RngService.new()  # T1.2/T3.8: 可播种统一随机源(种子化前置)
 var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
 var _running_runner = null  # T2.5: 当前演化 runner; start_game/load_game 置 cancelled 并清空
 var _evolution_serial: int = 0  # T2.5: 演化代数; 旧协程完成时若代数不匹配则不写回
@@ -56,6 +57,7 @@ func _ready() -> void:
 	# T1.4: 应用持久化的全局通关进度; 不再自动开局(由选档/新游戏入口驱动)
 	level_manager.unlocked = save_manager.get_unlocked()
 	rng.randomize()  # 真实游戏随机; 测试通过 rng.seed 覆盖
+	game_seed = rng.seed
 
 # 统一随机入口: [0, n) 均匀随机; Godot 4.7 的 randi() 流不可播种, 全部走 rng
 func _randi(n: int) -> int:
@@ -89,9 +91,11 @@ func start_game(level_idx: int = -1) -> void:
 	pillars.clear()  # T2.5: 新网格必须搭配空柱数组, 旧演化/旧局柱子不得残留
 	turn_snapshots.clear()  # T3.6: 新局不继承旧局撤销栈
 	hand = HandManager.new()
+	hand.rng = rng  # T3.8: 手牌洗牌与逻辑共用同一种子流
 	hand.fill_draw_pile(all_card_defs)
 	hand.refill_to(5)
 	energy = EnergySystem.new(3)
+	turn = 0
 	chain_total = 0
 	dead_turns = 0
 	game_ended = false
@@ -132,9 +136,7 @@ func preview_evolution() -> Dictionary:
 	if not energy.can_play():
 		return {}
 	var sim := _clone_game_for_preview()
-	var preview_rng := RandomNumberGenerator.new()
-	preview_rng.seed = rng.seed
-	preview_rng.state = rng.state  # 从当前随机流分叉, 预演不消耗真实 rng
+	var preview_rng: RngService = rng.fork()  # T3.8: 从当前随机流分叉, 预演不消耗真实 rng
 	var runner := ChainReaction.new()
 	var affected: Dictionary = {}
 	runner.reaction_applied.connect(func(r):
@@ -203,6 +205,26 @@ func ensure_game_started() -> void:
 
 func persist_unlock() -> void:
 	save_manager.set_unlocked(level_manager.unlocked)
+
+# ---------- T3.8 种子化 ----------
+func set_seed(seed_value: int) -> void:
+	game_seed = seed_value
+	rng.seed = seed_value
+
+func get_seed() -> int:
+	return game_seed
+
+func start_game_with_seed(level_idx: int, seed_value: int) -> void:
+	set_seed(seed_value)
+	start_game(level_idx)
+
+func daily_seed() -> int:
+	var date_text: String = Time.get_date_string_from_system().replace("-", "")
+	var v := int(date_text)
+	return v % 2147483000
+
+func start_daily_challenge(level_idx: int) -> void:
+	start_game_with_seed(level_idx, daily_seed())
 
 # ---------- T1.4 存档 ----------
 func _snapshot_game() -> Dictionary:
@@ -298,6 +320,7 @@ func _restore_snapshot(snap: Dictionary) -> bool:
 	energy = EnergySystem.new(3)
 	energy.current = int(snap.get("energy", 3))
 	hand = HandManager.new()
+	hand.rng = rng  # T3.8: 手牌洗牌与逻辑共用同一种子流
 	hand.fill_draw_pile(all_card_defs)
 	hand.hand = _ids_to_cards(snap.get("hand", []), card_by_id)
 	hand.draw_pile = _ids_to_cards(snap.get("draw", []), card_by_id)

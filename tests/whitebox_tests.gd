@@ -64,6 +64,8 @@ func _initialize() -> void:
 		["TC-32", "卡面场景与手动保留", tc32_卡面与手动保留],
 		["TC-33", "回合撤销快照", tc33_回合撤销],
 		["TC-34", "预演不改真实状态", tc34_预演],
+		["TC-35", "同种子回放一致", tc35_种子回放],
+		["TC-36", "尘对连锁放大可量化", tc36_尘放大],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -156,6 +158,15 @@ func tc01_关卡选择页可打开() -> void:
 	await self.process_frame
 	_check(ss.get_node_or_null("BG") != null, "SaveSelect 缺 BG 背景节点")
 	ss.free()
+	# T3.8: 关卡选择页种子输入/锁定/清除/每日挑战控件
+	scene = load(LEVEL_SELECT_SCENE).instantiate()
+	root.add_child(scene)
+	await self.process_frame
+	_check(scene.get("seed_edit") != null, "LevelSelect 缺 SeedEdit")
+	_check(scene.get("lock_seed_button") != null, "LevelSelect 缺 LockSeedButton")
+	_check(scene.get("clear_seed_button") != null, "LevelSelect 缺 ClearSeedButton")
+	_check(scene.get("daily_button") != null, "LevelSelect 缺 DailyButton")
+	scene.free()
 
 # ---------- TC-02 ----------
 func tc02_四关开局状态() -> void:
@@ -222,7 +233,7 @@ func tc05_主要按钮键盘可聚焦() -> void:
 		_check(false, "GameOverPanel 节点缺失: Main.tscn 第125-166行文本编码损坏导致解析错乱(MenuButton.text 被错解析为'重试'), 通关/失败界面及下一关/重试按钮运行时不可用 —— 属待修复缺陷")
 		main.free()
 		return
-	for path in ["HelpButton", "ExecuteButton", "MenuButton", "UndoButton", "PreviewButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
+	for path in ["HelpButton", "ExecuteButton", "MenuButton", "UndoButton", "PreviewButton", "SeedButton", "GameOverPanel/NextButton", "GameOverPanel/RetryButton"]:
 		var btn = main.get_node_or_null(path)
 		_check(btn != null, "场景缺少按钮节点 %s" % path)
 		if btn != null:
@@ -831,6 +842,58 @@ func tc34_预演() -> void:
 	_check(_gm.chain_total == 0, "预演不应累加真实连锁")
 	await _gm.execute()
 	_check(_gm.chain_total == int(result.get("chain_delta", -1)), "真实执行连锁=%d, 应与预演=%d 一致(同rng分叉)" % [_gm.chain_total, int(result.get("chain_delta", -1))])
+
+# ---------- TC-35 (T3.8) ----------
+func tc35_种子回放() -> void:
+	var seed_value := 424242
+	_gm.start_game_with_seed(0, seed_value)
+	var trace1: Array = [_gm_state_fingerprint()]
+	for _i in range(3):
+		_gm.end_turn()
+		trace1.append(_gm_state_fingerprint())
+	_gm.start_game_with_seed(0, seed_value)
+	_check(_gm_state_fingerprint() == trace1[0], "同种子开局指纹不一致")
+	for i in range(3):
+		_gm.end_turn()
+		_check(_gm_state_fingerprint() == trace1[i + 1], "第%d回合后同种子指纹不一致" % (i + 1))
+
+func _gm_state_fingerprint() -> String:
+	var hand_ids := []
+	for c in _gm.hand.hand:
+		hand_ids.append(c.id)
+	var draw_ids := []
+	for c in _gm.hand.draw_pile:
+		draw_ids.append(c.id)
+	var disc_ids := []
+	for c in _gm.hand.discard_pile:
+		disc_ids.append(c.id)
+	return "%s|t%d|w%d/%d|c%d|d%d|e%d|h%s|p%s|g%s" % [
+		_grid_hash(_gm.grid), _gm.turn, _gm.wind_dir, _gm.wind_speed,
+		_gm.chain_total, _gm.dead_turns, _gm.energy.current,
+		str(hand_ids), str(draw_ids), str(disc_ids)]
+
+# ---------- TC-36 (T3.8) ----------
+func tc36_尘放大() -> void:
+	var make_bridge := func(with_dust: bool) -> Grid:
+		var g := Grid.new(6, 6)
+		_put(g, 3, 3, Element.STEAM)
+		_put(g, 2, 2, Element.PLANT)
+		if with_dust:
+			g.get_cell(Vector2i(3, 3)).add_state(State.DUST, 3)
+			g.get_cell(Vector2i(2, 2)).add_state(State.DUST, 3)
+			g.get_cell(Vector2i(2, 3)).add_state(State.DUST, 3)
+		return g
+	var card = _make_rule_card({"id": "grow", "kind": "MULTIPLY", "trigger_element": "PLANT",
+		"contact_element": "STEAM", "result_element": "PLANT", "radius": 2, "life": 4})
+	var rng1 := RngService.new()
+	rng1.seed = 99
+	var chain_no: int = ChainReaction.new().execute(make_bridge.call(false), [_pillar(card, 1, 1)], 0, rng1)
+	var rng2 := RngService.new()
+	rng2.seed = 99
+	var chain_dust: int = ChainReaction.new().execute(make_bridge.call(true), [_pillar(card, 1, 1)], 0, rng2)
+	_check(chain_no == 0, "无尘桥时连锁=%d, 期望 0 (接触元素距离2不可达)" % chain_no)
+	_check(chain_dust >= 1, "有尘桥时连锁=%d, 期望 >=1" % chain_dust)
+	_check(chain_dust - chain_no >= 1, "尘放大贡献=%d, 期望可量化且 >=1" % (chain_dust - chain_no))
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:

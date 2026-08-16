@@ -7,6 +7,7 @@ var hand: Array = []        # Array[RuleCard]
 var draw_pile: Array = []
 var discard_pile: Array = []  # T1.2: 弃牌堆, 抽牌堆耗尽时循环重洗
 var _deck_pool: Array = []    # 初始牌池(兜底重洗用)
+var rng = null  # T3.8: 可选的 RngService; 为空时退回全局 shuffle
 
 func _init() -> void:
 	hand.clear()
@@ -16,8 +17,14 @@ func _init() -> void:
 func fill_draw_pile(cards: Array) -> void:
 	_deck_pool = cards.duplicate()
 	draw_pile = cards.duplicate()
-	draw_pile.shuffle()
+	_shuffle_draw()
 	discard_pile.clear()
+
+func _shuffle_draw() -> void:
+	if rng != null:
+		rng.shuffle(draw_pile)
+	else:
+		draw_pile.shuffle()
 
 func _ensure_pile() -> void:
 	if not draw_pile.is_empty():
@@ -25,11 +32,11 @@ func _ensure_pile() -> void:
 	if not discard_pile.is_empty():
 		# T1.2: 抽牌堆耗尽 → 弃牌堆循环重洗
 		draw_pile = discard_pile.duplicate()
-		draw_pile.shuffle()
+		_shuffle_draw()
 		discard_pile.clear()
 	elif not _deck_pool.is_empty():
 		draw_pile = _deck_pool.duplicate()
-		draw_pile.shuffle()
+		_shuffle_draw()
 
 func draw(n: int) -> void:
 	for i in range(n):

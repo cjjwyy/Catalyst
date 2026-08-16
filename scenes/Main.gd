@@ -23,6 +23,7 @@ var menu_button: Button
 var save_button: Button
 var undo_button: Button
 var preview_button: Button
+var seed_button: Button
 var save_dialog: PanelContainer = null
 var save_name_edit: LineEdit = null
 var card_views: Array = []
@@ -77,6 +78,13 @@ func _ready() -> void:
 	preview_button.focus_mode = Control.FOCUS_ALL
 	preview_button.pressed.connect(_on_preview)
 	add_child(preview_button)
+	seed_button = Button.new()
+	seed_button.name = "SeedButton"
+	seed_button.position = Vector2(1300, 753)
+	seed_button.size = Vector2(160, 26)
+	seed_button.focus_mode = Control.FOCUS_ALL
+	seed_button.pressed.connect(_on_copy_seed)
+	add_child(seed_button)
 	next_button.visible = false
 	retry_button.visible = false
 	execute_button.pressed.connect(_on_execute)
@@ -124,6 +132,7 @@ func _refresh() -> void:
 	save_button.disabled = (GameManager.phase == 2) or GameManager.game_ended
 	undo_button.disabled = not GameManager.can_undo()
 	preview_button.disabled = (GameManager.phase != 1) or GameManager.pillars.is_empty() or GameManager.energy.current < 1 or GameManager.game_ended
+	seed_button.text = "复制种子 %s" % GameManager.rng.seed_hex()
 
 func _phase_name(p: int) -> String:
 	match p:
@@ -164,6 +173,13 @@ func _on_undo() -> void:
 	grid_renderer.clear_preview()
 	if GameManager.undo_turn():
 		grid_renderer.select_card(-1)
+
+func _on_copy_seed() -> void:
+	DisplayServer.clipboard_set(str(GameManager.get_seed()))
+	seed_button.text = "种子已复制"
+	await get_tree().create_timer(1.2).timeout
+	if is_instance_valid(seed_button):
+		seed_button.text = "复制种子 %s" % GameManager.rng.seed_hex()
 
 func _on_preview() -> void:
 	var result: Dictionary = GameManager.preview_evolution()

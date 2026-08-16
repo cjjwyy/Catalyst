@@ -40,6 +40,7 @@ static func run_all() -> bool:
 	ok = ok and _test_meteor_event()
 	ok = ok and _test_disaster_earthquake()
 	ok = ok and _test_sound_synthesis()
+	ok = ok and _test_rng_determinism()
 	print("[CatalystTests] %s" % ("ALL PASS" if ok else "FAIL"))
 	return ok
 
@@ -757,6 +758,21 @@ static func _test_sound_synthesis() -> bool:
 	assert(sm.pitch_for_chain(100) > sm.pitch_for_chain(10), "pitch should rise with chain")
 	sm.free()
 	print("test_sound_synthesis OK")
+	return true
+
+static func _test_rng_determinism() -> bool:
+	# T3.8: RngService 同种子 shuffle/pick 完全一致
+	var a := RngService.new()
+	var b := RngService.new()
+	a.seed = 20240816
+	b.seed = 20240816
+	var aa: Array = [0, 1, 2, 3, 4, 5, 6, 7]
+	var bb: Array = [0, 1, 2, 3, 4, 5, 6, 7]
+	a.shuffle(aa)
+	b.shuffle(bb)
+	assert(aa == bb, "same-seed shuffle should match")
+	assert(a.pick(aa) == b.pick(bb), "same-seed pick should match")
+	print("test_rng_determinism OK")
 	return true
 
 static func _test_disaster_earthquake() -> bool:

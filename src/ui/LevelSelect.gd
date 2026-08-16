@@ -2,6 +2,11 @@ extends Control
 
 var GameManager: Node
 var buttons: Array = []
+var seed_edit: LineEdit
+var seed_override: int = -1
+var lock_seed_button: Button
+var clear_seed_button: Button
+var daily_button: Button
 
 func _ready() -> void:
 	GameManager = get_node("/root/GameManager")
@@ -29,7 +34,47 @@ func _ready() -> void:
 		btn.pressed.connect(func(): _on_level_selected(i))
 		container.add_child(btn)
 		buttons.append(btn)
+	# T3.8: 种子输入与每日挑战
+	seed_edit = LineEdit.new()
+	seed_edit.name = "SeedEdit"
+	seed_edit.placeholder_text = "种子(留空=随机)"
+	seed_edit.custom_minimum_size = Vector2(360, 34)
+	container.add_child(seed_edit)
+	var seed_row := HBoxContainer.new()
+	seed_row.add_theme_constant_override("separation", 8)
+	container.add_child(seed_row)
+	lock_seed_button = Button.new()
+	lock_seed_button.name = "LockSeedButton"
+	lock_seed_button.text = "锁定种子"
+	lock_seed_button.pressed.connect(_on_lock_seed)
+	seed_row.add_child(lock_seed_button)
+	clear_seed_button = Button.new()
+	clear_seed_button.name = "ClearSeedButton"
+	clear_seed_button.text = "清除种子"
+	clear_seed_button.pressed.connect(func():
+		seed_override = -1
+		seed_edit.text = "")
+	seed_row.add_child(clear_seed_button)
+	daily_button = Button.new()
+	daily_button.name = "DailyButton"
+	daily_button.text = "今日挑战(第1关)"
+	daily_button.pressed.connect(func():
+		GameManager.start_daily_challenge(0)
+		get_tree().change_scene_to_file("res://scenes/Main.tscn"))
+	seed_row.add_child(daily_button)
 
 func _on_level_selected(idx: int) -> void:
-	GameManager.level_manager.select(idx)
+	if seed_override >= 0:
+		GameManager.start_game_with_seed(idx, seed_override)  # T3.8: 回放种子
+	else:
+		GameManager.level_manager.select(idx)
 	get_tree().change_scene_to_file("res://scenes/Main.tscn")
+
+func _on_lock_seed() -> void:
+	var text := seed_edit.text.strip_edges()
+	if text == "":
+		return
+	if text.is_valid_int():
+		seed_override = int(text)
+	else:
+		seed_override = hash(text)
