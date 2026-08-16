@@ -725,7 +725,7 @@ func tc16_振荡有限终止() -> void:
 func tc17_各关格子尺寸() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
 	var expect := [64, 64, 57, 50, 44]
-	var expect_right := [820, 948, 978, 980, 972]
+	var expect_right := [860, 988, 1018, 1020, 1012]
 	var expect_bottom := [688, 816, 846, 848, 840]
 	for i in range(expect.size()):
 		_gm.start_game(i)

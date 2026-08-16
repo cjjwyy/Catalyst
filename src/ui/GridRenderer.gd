@@ -1,7 +1,7 @@
 extends Node2D
 
 const MAX_CELL_SIZE = 64
-const GRID_OFFSET = Vector2(180, 48)  # UI调整: 地图整体下移一点
+const GRID_OFFSET = Vector2(220, 48)  # UI调整: 地图右移避开左侧文本, 并下移一点
 var cell_size: int = 64
 const DIR_CHARS = ["^", ">", "v", "<"]
 
