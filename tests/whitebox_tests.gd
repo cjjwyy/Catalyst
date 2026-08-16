@@ -66,6 +66,7 @@ func _initialize() -> void:
 		["TC-34", "预演不改真实状态", tc34_预演],
 		["TC-35", "同种子回放一致", tc35_种子回放],
 		["TC-36", "尘对连锁放大可量化", tc36_尘放大],
+		["TC-37", "入口文案i18n化", tc37_入口文案],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -897,6 +898,26 @@ func tc36_尘放大() -> void:
 	_check(chain_no == 0, "无尘桥时连锁=%d, 期望 0 (接触元素距离2不可达)" % chain_no)
 	_check(chain_dust >= 1, "有尘桥时连锁=%d, 期望 >=1" % chain_dust)
 	_check(chain_dust - chain_no >= 1, "尘放大贡献=%d, 期望可量化且 >=1" % (chain_dust - chain_no))
+
+# ---------- TC-37 (T4.3) ----------
+func tc37_入口文案() -> void:
+	var texts = load("res://src/ui/Texts.gd").new()
+	texts.t("app_title")
+	for key in ["app_title", "choose_slot_hint", "new_game", "manage_slots", "slot_empty", "slot_filled", "level_format", "locked_suffix", "seed_placeholder", "lock_seed", "clear_seed", "daily_challenge"]:
+		_check(texts.t(key) != key and texts.t(key) != "", "i18n key %s 未配置" % key)
+	var level = load(LEVEL_SELECT_SCENE).instantiate()
+	root.add_child(level)
+	await self.process_frame
+	var first_btn: Button = level.buttons[0]
+	_check(first_btn.text.contains(texts.t("level_format", [level.GameManager.level_manager.get_level(0).name, 10, 10, 100]).split("  ")[0]), "LevelSelect 标题/按钮未走 i18n")
+	_check(level.seed_edit.placeholder_text == texts.t("seed_placeholder"), "SeedEdit placeholder 未走 i18n")
+	_check(level.daily_button.text == texts.t("daily_challenge"), "DailyButton 未走 i18n")
+	level.free()
+	var save = load(SAVE_SELECT_SCENE).instantiate()
+	root.add_child(save)
+	await self.process_frame
+	_check(save.get_node("Layout") != null, "SaveSelect 缺 Layout 容器")
+	save.free()
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:

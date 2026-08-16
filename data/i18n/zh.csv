@@ -1,0 +1,24 @@
+key,zh
+app_title,催化剂 Catalyst
+choose_slot_hint,选择一个存档继续, 或开始新游戏
+new_game,新游戏
+manage_slots,调整存档
+slot_empty,槽%d: (空槽位)
+slot_filled,槽%d: %s — %s
+slot_label,槽%d
+manage_title,调整存档
+close,关闭
+rename,重命名
+delete,删除
+confirm_delete,确定删除 槽%d「%s」的存档吗?
+empty_placeholder,(空槽位)
+level_format,%s  %dx%d  目标%d
+locked_suffix,  [锁定]
+rule_level_1,本关: 基础规则, 适合首次游玩
+rule_level_2,本关新增: 孢子牌 · 燃烧蔓延
+rule_level_3,本关新增: 冰牌 · 降雪凝冰
+rule_level_4,本关新增: 祝福 · 陨石术 · 天灾
+seed_placeholder,种子(留空=随机)
+lock_seed,锁定种子
+clear_seed,清除种子
+daily_challenge,今日挑战(第1关)
