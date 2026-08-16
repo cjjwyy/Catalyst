@@ -222,7 +222,7 @@ docs/         策划、规格、计划、路线图
 
 ## CI 与发布
 
-- GitHub Actions: `.github/workflows/ci.yml`,push/PR 到 master 时下载官方 Godot 4.7 Linux 版,依次跑核心自检(`ci_tests.gd`)、白盒 47 条、场景冒烟。
+- GitHub Actions: `.github/workflows/ci.yml`,push/PR 到 master 时下载官方 Godot 4.7 Linux 版,先 `--import` 注册全局类,再依次跑核心自检(`ci_tests.gd`)、白盒 47 条、场景冒烟。
 - 导出预设: `export_presets.cfg`(Windows/Linux/Web);图标 `icon.svg`。
 - itch.io: 安装 butler 后运行 `./tools/itch_push.sh <butler路径> <itch用户名/游戏名>`。
 

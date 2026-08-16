@@ -23,6 +23,9 @@ jobs:
           sudo chmod +x /usr/local/bin/godot
           godot --version
 
+      - name: Import project (register global classes)
+        run: godot --headless --path . --import
+
       - name: Core tests
         run: godot --headless --path . --script res://tests/ci_tests.gd
 
