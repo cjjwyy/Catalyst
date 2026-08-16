@@ -374,7 +374,12 @@ func _on_game_over(won: bool, msg: String) -> void:
 	execute_button.disabled = true
 
 func _on_level_complete(_idx: int) -> void:
-	gameover_label.text = "胜利! 达成 %d 连锁" % GameManager.chain_total
+	var stars_text := ""
+	for _i in range(GameManager.last_stars):
+		stars_text += "★"
+	for _i in range(GameManager.last_stars, 3):
+		stars_text += "☆"
+	gameover_label.text = "胜利! 达成 %d 连锁  %s" % [GameManager.chain_total, stars_text]
 	gameover_label.add_theme_color_override("font_color", Color.GREEN)
 	gameover_panel.visible = true
 	if GameManager.level_manager.advance():

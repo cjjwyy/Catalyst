@@ -68,6 +68,7 @@ func _initialize() -> void:
 		["TC-36", "尘对连锁放大可量化", tc36_尘放大],
 		["TC-37", "入口文案i18n化", tc37_入口文案],
 		["TC-38", "第5关新机制与可通关", tc38_第五关],
+		["TC-39", "关卡目标与星级", tc39_关卡目标],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -1003,6 +1004,28 @@ func _find_state_spot(card: Resource) -> Vector2i:
 			best = count
 			best_coord = c.coord
 	return best_coord if best > 0 else Vector2i(-1, -1)
+
+# ---------- TC-39 (T4.6) ----------
+func tc39_关卡目标() -> void:
+	_gm.start_game(0)
+	_check(_gm.current_goals.size() == 3, "第1关 goals 数=%d, 期望3" % _gm.current_goals.size())
+	_gm.chain_total = 100
+	_gm.peak_chain = 50
+	_gm.turn = 10
+	var passed: int = _gm.evaluate_goals()
+	_check(passed == 3 and _gm.last_stars == 3, "目标全通过 stars=%d, 期望3" % _gm.last_stars)
+	_check(_gm.goal_results.size() == 3, "goal_results 数=%d, 期望3" % _gm.goal_results.size())
+	# 限定回合失败路径
+	_gm.start_game(0)
+	_gm.current_goals = [{"id": "turns", "target": 2}]
+	_gm.turn = 2
+	_tc_got = false
+	_tc_msg = ""
+	_gm.game_over.connect(func(_w: bool, msg: String) -> void:
+		_tc_got = true
+		_tc_msg = msg, CONNECT_ONE_SHOT)
+	_gm.end_turn()
+	_check(_gm.game_ended and _tc_got and _tc_msg.contains("限定回合"), "超过限定回合未判负: ended=%s msg=%s" % [_gm.game_ended, _tc_msg])
 
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:

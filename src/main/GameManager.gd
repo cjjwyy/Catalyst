@@ -36,7 +36,11 @@ var energy: EnergySystem
 var all_card_defs: Array = []
 var save_manager: SaveManager = SaveManager.new()
 var auto_retention: bool = true  # T3.5
-var game_seed: int = 0  # T3.8: 当前局种子; 0=未显式锁定
+var game_seed: int = 0
+var current_goals: Array = []  # T4.6: 当前关目标数组
+var peak_chain: int = 0  # T4.6: 单次演化峰值
+var last_stars: int = 0  # T4.6: 最近通关星级
+var goal_results: Array = []  # T4.6: [{id, target, value, ok}]  # T3.8: 当前局种子; 0=未显式锁定
 var rng: RngService = RngService.new()  # T1.2/T3.8: 可播种统一随机源(种子化前置)
 var rules_data_error: String = ""  # T2.3: 规则文件加载失败原因; 非空表示本局处于明确失败态
 var _running_runner = null  # T2.5: 当前演化 runner; start_game/load_game 置 cancelled 并清空
@@ -98,6 +102,9 @@ func start_game(level_idx: int = -1) -> void:
 	grid = _load_level(lvl.path)
 	pillars.clear()  # T2.5: 新网格必须搭配空柱数组, 旧演化/旧局柱子不得残留
 	turn_snapshots.clear()  # T3.6: 新局不继承旧局撤销栈
+	peak_chain = 0
+	last_stars = 0
+	goal_results = []
 	hand = HandManager.new()
 	hand.rng = rng  # T3.8: 手牌洗牌与逻辑共用同一种子流
 	hand.fill_draw_pile(all_card_defs)
@@ -414,6 +421,14 @@ func _load_level(path: String) -> Grid:
 		target = clampi(target, 1, 99999)
 		return Grid.new(6, 6)
 	_parse_chaos_elements(data)
+	var raw_goals = data.get("goals", [])
+	current_goals = []
+	if typeof(raw_goals) == TYPE_ARRAY and not raw_goals.is_empty():
+		for ge in raw_goals:
+			if typeof(ge) == TYPE_DICTIONARY:
+				current_goals.append(ge)
+	if current_goals.is_empty():
+		current_goals = [{"id": "total", "target": target}]
 	var w := 6
 	var h := 6
 	var size = data.get("size", [6, 6])
@@ -514,12 +529,14 @@ func execute(speed: float = 1.0) -> void:
 	if _running_runner == runner:
 		_running_runner = null
 	chain_total += gained
+	peak_chain = max(peak_chain, gained)
 	if gained == 0:
 		dead_turns += 1
 	else:
 		dead_turns = 0
 	if chain_total >= target:
 		game_ended = true
+		evaluate_goals()
 		level_complete.emit(level_manager.current_level)
 		return
 	if dead_turns >= DEAD_TURNS:
@@ -527,6 +544,34 @@ func execute(speed: float = 1.0) -> void:
 		game_over.emit(false, "失败: 世界进入死寂")
 		return
 	end_turn()
+
+# T4.6: 按关卡 goals 数组评估: total/peak/turns; 返回全部通过数量
+func evaluate_goals() -> int:
+	goal_results = []
+	var passed := 0
+	for g in current_goals:
+		var gid: String = str(g.get("id", ""))
+		var gtarget: int = int(g.get("target", 0))
+		var value := 0
+		match gid:
+			"peak":
+				value = peak_chain
+			"turns":
+				value = turn
+			_:
+				value = chain_total
+		var ok: bool = value >= gtarget if gid != "turns" else turn <= gtarget
+		if ok:
+			passed += 1
+		goal_results.append({"id": gid, "target": gtarget, "value": value, "ok": ok})
+	last_stars = passed
+	return passed
+
+func check_turn_limit() -> bool:
+	for g in current_goals:
+		if str(g.get("id", "")) == "turns" and turn > int(g.get("target", 0)):
+			return true
+	return false
 
 func end_turn() -> void:
 	if grid != null and not game_ended:
@@ -541,6 +586,12 @@ func end_turn() -> void:
 	_world_rules()
 	_reroll_wind()
 	turn += 1
+	if check_turn_limit():
+		game_ended = true
+		phase = Phase.EVOLVE
+		game_over.emit(false, "失败: 超过限定回合")
+		state_changed.emit()
+		return
 	hand.draw(3)
 	energy.refill()
 	if hand.hand_size() > RETAIN_LIMIT:

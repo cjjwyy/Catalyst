@@ -1,33 +1,403 @@
 {
   "name": "深渊·终焉",
-  "size": [18, 18],
+  "size": [
+    18,
+    18
+  ],
   "target": 3000,
-  "chaos_elements": ["WATER", "STONE", "EARTH", "STEAM", "LAVA", "PLANT"],
+  "goals": [
+    {
+      "id": "total",
+      "target": 3000
+    },
+    {
+      "id": "peak",
+      "target": 1000
+    },
+    {
+      "id": "turns",
+      "target": 60
+    }
+  ],
+  "chaos_elements": [
+    "WATER",
+    "STONE",
+    "EARTH",
+    "STEAM",
+    "LAVA",
+    "PLANT"
+  ],
   "elements": [
-    {"coord": [1, 1], "element": "WATER"}, {"coord": [2, 1], "element": "WATER"}, {"coord": [3, 1], "element": "LAVA"},
-    {"coord": [1, 2], "element": "STONE"}, {"coord": [2, 2], "element": "PLANT"}, {"coord": [3, 2], "element": "PLANT"},
-    {"coord": [1, 3], "element": "PLANT"}, {"coord": [2, 3], "element": "ORE"}, {"coord": [3, 3], "element": "STONE"},
-
-    {"coord": [14, 1], "element": "WATER"}, {"coord": [15, 1], "element": "WATER"}, {"coord": [14, 2], "element": "LAVA"},
-    {"coord": [16, 2], "element": "PLANT"}, {"coord": [15, 3], "element": "ORE"}, {"coord": [16, 3], "element": "STONE"},
-
-    {"coord": [1, 14], "element": "WATER"}, {"coord": [2, 14], "element": "WATER"}, {"coord": [1, 15], "element": "LAVA"},
-    {"coord": [3, 15], "element": "PLANT"}, {"coord": [2, 16], "element": "PLANT"}, {"coord": [3, 16], "element": "STONE"},
-
-    {"coord": [14, 14], "element": "WATER"}, {"coord": [15, 14], "element": "WATER"}, {"coord": [16, 14], "element": "LAVA"},
-    {"coord": [14, 15], "element": "PLANT"}, {"coord": [15, 16], "element": "PLANT"}, {"coord": [16, 16], "element": "STONE"},
-
-    {"coord": [8, 8], "element": "WATER"}, {"coord": [9, 8], "element": "WATER"}, {"coord": [8, 9], "element": "LAVA"},
-    {"coord": [9, 9], "element": "PLANT"}, {"coord": [10, 9], "element": "PLANT"}, {"coord": [9, 10], "element": "ORE"},
-
-    {"coord": [4, 5], "element": "PLANT"}, {"coord": [5, 4], "element": "PLANT"}, {"coord": [5, 5], "element": "PLANT"},
-    {"coord": [12, 5], "element": "PLANT"}, {"coord": [13, 4], "element": "PLANT"}, {"coord": [13, 5], "element": "PLANT"},
-    {"coord": [4, 12], "element": "PLANT"}, {"coord": [5, 13], "element": "PLANT"}, {"coord": [5, 12], "element": "PLANT"},
-    {"coord": [12, 12], "element": "PLANT"}, {"coord": [13, 12], "element": "PLANT"}, {"coord": [13, 13], "element": "PLANT"},
-
-    {"coord": [0, 0], "element": "STONE"}, {"coord": [17, 0], "element": "STONE"},
-    {"coord": [0, 17], "element": "STONE"}, {"coord": [17, 17], "element": "STONE"},
-    {"coord": [6, 6], "element": "ORE"}, {"coord": [11, 6], "element": "ORE"},
-    {"coord": [6, 11], "element": "ORE"}, {"coord": [11, 11], "element": "ORE"}
+    {
+      "coord": [
+        1,
+        1
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        2,
+        1
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        3,
+        1
+      ],
+      "element": "LAVA"
+    },
+    {
+      "coord": [
+        1,
+        2
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        2,
+        2
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        3,
+        2
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        1,
+        3
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        2,
+        3
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        3,
+        3
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        14,
+        1
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        15,
+        1
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        14,
+        2
+      ],
+      "element": "LAVA"
+    },
+    {
+      "coord": [
+        16,
+        2
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        15,
+        3
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        16,
+        3
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        1,
+        14
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        2,
+        14
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        1,
+        15
+      ],
+      "element": "LAVA"
+    },
+    {
+      "coord": [
+        3,
+        15
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        2,
+        16
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        3,
+        16
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        14,
+        14
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        15,
+        14
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        16,
+        14
+      ],
+      "element": "LAVA"
+    },
+    {
+      "coord": [
+        14,
+        15
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        15,
+        16
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        16,
+        16
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        8,
+        8
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        9,
+        8
+      ],
+      "element": "WATER"
+    },
+    {
+      "coord": [
+        8,
+        9
+      ],
+      "element": "LAVA"
+    },
+    {
+      "coord": [
+        9,
+        9
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        10,
+        9
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        9,
+        10
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        4,
+        5
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        5,
+        4
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        5,
+        5
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        12,
+        5
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        13,
+        4
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        13,
+        5
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        4,
+        12
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        5,
+        13
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        5,
+        12
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        12,
+        12
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        13,
+        12
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        13,
+        13
+      ],
+      "element": "PLANT"
+    },
+    {
+      "coord": [
+        0,
+        0
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        17,
+        0
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        0,
+        17
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        17,
+        17
+      ],
+      "element": "STONE"
+    },
+    {
+      "coord": [
+        6,
+        6
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        11,
+        6
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        6,
+        11
+      ],
+      "element": "ORE"
+    },
+    {
+      "coord": [
+        11,
+        11
+      ],
+      "element": "ORE"
+    }
   ]
 }
