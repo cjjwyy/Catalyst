@@ -214,6 +214,12 @@ docs/         策划、规格、计划、路线图
 
 ---
 
+## CI 与发布
+
+- GitHub Actions: `.github/workflows/ci.yml`,push/PR 到 master 时在 `barichello/godot-ci:4.7-stable` 容器跑核心+白盒+冒烟。
+- 导出预设: `export_presets.cfg`(Windows/Linux/Web);图标 `icon.svg`。
+- itch.io: 安装 butler 后运行 `./tools/itch_push.sh <butler路径> <itch用户名/游戏名>`。
+
 ## 开发路线图
 
 后续发展与优化的建议、按优先级排好的可执行行动指南(含文件级改动点与验收标准)见 **[docs/开发路线图与行动指南.md](docs/开发路线图与行动指南.md)**;拆解后的逐任务行动卡(可勾选、带验收标准)见 **[docs/action-plan/](docs/action-plan/README.md)**。

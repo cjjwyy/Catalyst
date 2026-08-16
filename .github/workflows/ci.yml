@@ -1,0 +1,21 @@
+name: Catalyst CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  headless-tests:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.7-stable
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Core + whitebox tests
+        run: |
+          godot --headless --path . --script res://tests/whitebox_tests.gd
+          godot --headless --path . --quit-after 20
