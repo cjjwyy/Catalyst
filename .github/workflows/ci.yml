@@ -9,13 +9,25 @@ on:
 jobs:
   headless-tests:
     runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.7-stable
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Core + whitebox tests
+      - name: Install Godot 4.7
         run: |
-          godot --headless --path . --script res://tests/whitebox_tests.gd
-          godot --headless --path . --quit-after 20
+          sudo apt-get update
+          sudo apt-get install -y unzip wget
+          wget -q https://github.com/godotengine/godot/releases/download/4.7-stable/Godot_v4.7-stable_linux.x86_64.zip
+          unzip -q Godot_v4.7-stable_linux.x86_64.zip
+          sudo mv Godot_v4.7-stable_linux.x86_64 /usr/local/bin/godot
+          sudo chmod +x /usr/local/bin/godot
+          godot --version
+
+      - name: Core tests
+        run: godot --headless --path . --script res://tests/ci_tests.gd
+
+      - name: Whitebox tests
+        run: godot --headless --path . --script res://tests/whitebox_tests.gd
+
+      - name: Scene smoke
+        run: godot --headless --path . --quit-after 20
