@@ -5,7 +5,6 @@ enum Phase { OBSERVE, LAYOUT, EVOLVE, RETAIN }
 const DEAD_TURNS = 10
 const RETAIN_LIMIT = 3  # T3.5: 回合结束保留至多 3 张
 const RULES_PATH = "res://data/rules.json"
-const LEVEL_PATH = "res://data/coast.json"
 const TestsScript = preload("res://tests/run_tests.gd")
 const WorldRulesScript = preload("res://src/world/WorldRules.gd")
 
