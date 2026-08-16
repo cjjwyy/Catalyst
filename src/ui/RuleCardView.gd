@@ -23,7 +23,7 @@ func setup(c, idx: int) -> void:
 	if e != null:
 		var dv = card.get("desc") if card != null else null
 		var desc: String = str(dv) if dv != null else ""
-		e.text = _effect_text() + ("\n" + desc if desc != "" else "")
+		e.text = desc if desc != "" else _effect_text()
 	var band: ColorRect = get_node_or_null("TypeBand")
 	if band != null:
 		band.color = _kind_color()
@@ -45,7 +45,7 @@ func refresh() -> void:
 	if e != null:
 		var dv = card.get("desc") if card != null else null
 		var desc: String = str(dv) if dv != null else ""
-		e.text = _effect_text() + ("\n" + desc if desc != "" else "")
+		e.text = desc if desc != "" else _effect_text()
 
 const CN = {
 	Element.NONE: "空", Element.WATER: "水", Element.STONE: "岩",

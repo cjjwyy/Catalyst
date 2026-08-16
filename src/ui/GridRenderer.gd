@@ -1,7 +1,7 @@
 extends Node2D
 
 const MAX_CELL_SIZE = 64
-const GRID_OFFSET = Vector2(180, 40)
+const GRID_OFFSET = Vector2(180, 48)  # UI调整: 地图整体下移一点
 var cell_size: int = 64
 const DIR_CHARS = ["^", ">", "v", "<"]
 
@@ -91,7 +91,7 @@ func set_grid(g) -> void:
 	grid = g
 	# 动态计算 cell_size: 适配窗口, 最大 64px
 	var avail_w = 1500 - int(GRID_OFFSET.x) - 220
-	var avail_h = 1000 - int(GRID_OFFSET.y) - 120
+	var avail_h = 850 - int(GRID_OFFSET.y)  # 手牌区上移到 y=850, 地图底部不得压到手牌
 	cell_size = min(MAX_CELL_SIZE, avail_w / grid.w, avail_h / grid.h)
 	queue_redraw()
 

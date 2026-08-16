@@ -66,11 +66,13 @@ func _ready() -> void:
 	help_label = $HelpPanel/HelpLabel
 	help_label.position = Vector2(16, 40)
 	help_label.size = Vector2(943, 560)
+	help_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER  # UI调整: 帮助文字居中
 	help_title_label = Label.new()
 	help_title_label.name = "HelpTitleLabel"
 	help_title_label.position = Vector2(16, 8)
 	help_title_label.size = Vector2(943, 28)
 	help_title_label.add_theme_font_size_override("font_size", 18)
+	help_title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER  # UI调整: 帮助标题居中
 	help_panel.add_child(help_title_label)
 	help_prev_button = Button.new()
 	help_prev_button.name = "HelpPrevButton"
@@ -198,25 +200,35 @@ func _show_onboarding() -> void:
 	onboarding_panel = PanelContainer.new()
 	onboarding_panel.name = "OnboardingPanel"
 	onboarding_panel.z_index = 100
-	onboarding_panel.position = Vector2(360, 220)
+	onboarding_panel.position = Vector2(360, 350)  # UI调整: 提示移到屏幕中间
 	onboarding_panel.size = Vector2(780, 300)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.08, 0.09, 0.12, 1.0)  # UI调整: 不透明背景
+	panel_style.border_color = Color(0.9, 0.8, 0.4, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(10)
+	onboarding_panel.add_theme_stylebox_override("panel", panel_style)
 	add_child(onboarding_panel)
 	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	box.add_theme_constant_override("separation", 14)
 	onboarding_panel.add_child(box)
 	var title := Label.new()
 	title.name = "OnboardingTitle"
 	title.text = "新手引导 (%d/5)" % (_onboarding_step + 1)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	box.add_child(title)
 	onboarding_label = Label.new()
 	onboarding_label.name = "OnboardingLabel"
 	onboarding_label.text = _onboarding_steps()[_onboarding_step]
+	onboarding_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	onboarding_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	onboarding_label.custom_minimum_size = Vector2(720, 140)
 	onboarding_label.add_theme_font_size_override("font_size", 16)
 	box.add_child(onboarding_label)
 	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	box.add_child(row)
 	onboarding_next_button = Button.new()

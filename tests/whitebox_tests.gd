@@ -724,13 +724,13 @@ func tc16_振荡有限终止() -> void:
 # ---------- TC-17 ----------
 func tc17_各关格子尺寸() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
-	var expect := [64, 64, 60, 52, 46]
-	var expect_right := [820, 948, 1020, 1012, 1008]
-	var expect_bottom := [680, 808, 880, 872, 868]
+	var expect := [64, 64, 57, 50, 44]
+	var expect_right := [820, 948, 978, 980, 972]
+	var expect_bottom := [688, 816, 846, 848, 840]
 	for i in range(expect.size()):
 		_gm.start_game(i)
 		renderer.set_grid(_gm.grid)
-		_check(renderer.cell_size == expect[i], "第%d关 cell_size=%d, 期望 %d (GridRenderer.gd:92-94: min(64,1100/w,840/h))" % [i + 1, renderer.cell_size, expect[i]])
+		_check(renderer.cell_size == expect[i], "第%d关 cell_size=%d, 期望 %d (GridRenderer.gd: min(64,1100/w,(850-offset)/h))" % [i + 1, renderer.cell_size, expect[i]])
 		var right: int = int(180 + _gm.grid.w * renderer.cell_size)
 		var bottom: int = int(40 + _gm.grid.h * renderer.cell_size)
 		_check(right <= 1500, "第%d关网格右缘=%d, 期望 <=1500" % [i + 1, right])
@@ -1061,7 +1061,7 @@ func tc22_贴图缩放比例() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
 	_gm.start_game(3)
 	renderer.set_grid(_gm.grid)
-	_check(renderer.cell_size == 52, "16x16 cell_size=%d, 期望 52 (本用例前提)" % renderer.cell_size)
+	_check(renderer.cell_size == 50, "16x16 cell_size=%d, 期望 50 (本用例前提)" % renderer.cell_size)
 	for p in renderer.ELEMENT_PATHS.values():
 		var tex = load(p)
 		if tex == null:

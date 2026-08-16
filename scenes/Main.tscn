@@ -33,10 +33,10 @@ text = "?"
 
 [node name="HelpPanel" type="TextureRect" parent="."]
 visible = false
-offset_left = 400.0
-offset_top = 100.0
-offset_right = 1375.0
-offset_bottom = 750.0
+offset_left = 262.5
+offset_top = 175.0
+offset_right = 1237.5
+offset_bottom = 825.0
 mouse_filter = 2
 stretch_mode = 1
 expand_mode = 1
@@ -124,9 +124,9 @@ text = "手牌: 5/8"
 
 [node name="HandContainer" type="HBoxContainer" parent="."]
 offset_left = 180.0
-offset_top = 890.0
+offset_top = 850.0
 offset_right = 1280.0
-offset_bottom = 970.0
+offset_bottom = 930.0
 theme_override_constants/separation = 6
 
 [node name="ExecuteButton" type="Button" parent="."]
