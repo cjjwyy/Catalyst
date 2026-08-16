@@ -44,6 +44,7 @@ func _ready() -> void:
 			1: rule_hint.text = texts.t("rule_level_2")
 			2: rule_hint.text = texts.t("rule_level_3")
 			3: rule_hint.text = texts.t("rule_level_4")
+			4: rule_hint.text = texts.t("rule_level_5")
 			_: rule_hint.text = texts.t("rule_level_1")
 		rule_hint.add_theme_font_size_override("font_size", 12)
 		rule_hint.modulate = Color(0.85, 0.9, 0.85)

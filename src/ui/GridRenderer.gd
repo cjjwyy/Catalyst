@@ -157,6 +157,8 @@ func _draw() -> void:
 					draw_rect(rect.grow(-4), Color(1, 0.92, 0.2), false, 3)
 			if c.has_state(State.STEAMED):
 				draw_rect(rect.grow(-6), Color(0.9, 0.9, 1, 0.32), true)
+			if c.has_state(State.ASH):
+				draw_rect(rect.grow(-5), Color(0.35, 0.32, 0.4, 0.4), true)
 			if c.has_state(State.BURNING):
 				var ot = tex_overlays.get(State.BURNING)
 				if ot != null: draw_texture_rect(ot, rect, false)

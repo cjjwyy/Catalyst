@@ -78,6 +78,14 @@ func _prepare_card_defs(lvl_idx: int) -> Array:
 		if c.id == "grow":
 			for _i in range(2):
 				all_card_defs.append(c)
+		if c.id == "superheat":
+			for _i in range(2):
+				all_card_defs.append(c)
+		if c.id == "ashify":
+			for _i in range(2):
+				all_card_defs.append(c)
+		if c.id == "abyss_purge":
+			all_card_defs.append(c)
 	return all_card_defs
 
 func start_game(level_idx: int = -1) -> void:
@@ -174,7 +182,7 @@ func _auto_retain() -> void:
 		hand.discard_from_hand(_worst_card_idx())
 
 func _worst_card_idx() -> int:
-	var priority := ["steamify", "harvest", "grow", "drought", "extinct", "petrify", "grass_grow", "grass_spread", "sporify", "spore_bloom", "freeze", "melt", "bless", "meteor_strike"]
+	var priority := ["abyss_purge", "ashify", "superheat", "steamify", "harvest", "grow", "drought", "extinct", "petrify", "grass_grow", "grass_spread", "sporify", "spore_bloom", "freeze", "melt", "bless", "meteor_strike"]
 	var worst := 0
 	var worst_rank := -1
 	for i in range(hand.hand_size()):

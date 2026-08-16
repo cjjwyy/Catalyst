@@ -6,6 +6,7 @@ const LEVELS = [
 	{"id": "jungle", "name": "丛林·生长", "path": "res://data/levels/jungle.json", "size": [12,12], "target": 300},
 	{"id": "mountain", "name": "高山·精炼", "path": "res://data/levels/mountain.json", "size": [14,14], "target": 700},
 	{"id": "volcano", "name": "火山口·终局", "path": "res://data/levels/volcano.json", "size": [16,16], "target": 1500},
+	{"id": "abyss", "name": "深渊·终焉", "path": "res://data/levels/abyss.json", "size": [18,18], "target": 3000},
 ]
 
 var current_level: int = 0

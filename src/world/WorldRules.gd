@@ -15,6 +15,7 @@ func apply_all(grid: Grid, level: int, turn: int, wind_dir: int, wind_speed: int
 	_grass_and_earth(grid, turn)
 	_generate_water_stone(grid, turn, rng)
 	_burning(grid, turn)
+	_frozen_contact(grid, turn)
 	_spore_wind(grid, turn, wind_dir)
 	_snow(grid, turn, rng)
 	_disaster(grid, level, turn, rng, pillars)
@@ -114,7 +115,38 @@ func _snow(grid: Grid, turn: int, rng: RandomNumberGenerator) -> void:
 					c.remove_state(State.SNOW)
 					break
 
+func _frozen_contact(grid: Grid, turn: int) -> void:
+	# T4.5: 冰邻水 → 水加 FROZEN
+	var to_freeze: Array = []
+	for c in grid.all_cells():
+		if c.element == Element.WATER and not c.has_state(State.FROZEN):
+			for n in grid.neighbors(c.coord):
+				if n.element == Element.ICE:
+					to_freeze.append(c)
+					break
+	for c in to_freeze:
+		c.add_state(State.FROZEN, 2)
+
 func _disaster(grid: Grid, level: int, turn: int, rng: RandomNumberGenerator, pillars: Array) -> void:
+	if level == 4:
+		if rng.randi_range(0, 99) < 30:
+			if rng.randi_range(0, 1) == 0:
+				for c in grid.all_cells():
+					c.clear_states()
+			elif not pillars.is_empty():
+				var p = pillars[rng.randi_range(0, pillars.size() - 1)]
+				var old = grid.get_cell(p.coord)
+				if old != null:
+					old.pillar = null
+				var empties: Array = []
+				for c in grid.all_cells():
+					if c.pillar == null:
+						empties.append(c)
+				if not empties.is_empty():
+					var dst = empties[rng.randi_range(0, empties.size() - 1)]
+					p.coord = dst.coord
+					dst.pillar = p
+		return
 	if level != 3:
 		return
 	if rng.randi_range(0, 99) < 30:

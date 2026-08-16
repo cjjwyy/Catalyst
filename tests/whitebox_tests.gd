@@ -39,7 +39,7 @@ func _initialize() -> void:
 
 	var tests := [
 		["TC-01", "关卡选择页可打开", tc01_关卡选择页可打开],
-		["TC-02", "四关开局状态", tc02_四关开局状态],
+		["TC-02", "五关开局状态", tc02_四关开局状态],
 		["TC-03", "场景往返导航后状态干净", tc03_场景往返导航],
 		["TC-04", "帮助面板文本无乱码", tc04_帮助面板文本无乱码],
 		["TC-05", "主要按钮键盘可聚焦", tc05_主要按钮键盘可聚焦],
@@ -67,6 +67,7 @@ func _initialize() -> void:
 		["TC-35", "同种子回放一致", tc35_种子回放],
 		["TC-36", "尘对连锁放大可量化", tc36_尘放大],
 		["TC-37", "入口文案i18n化", tc37_入口文案],
+		["TC-38", "第5关新机制与可通关", tc38_第五关],
 		["TC-21", "元素与特效贴图资源完整", tc21_贴图资源完整],
 		["TC-22", "贴图缩放比例区间", tc22_贴图缩放比例],
 		["TC-22b", "贴图矩形宽高比与越界", tc22b_贴图矩形宽高比与越界],
@@ -148,7 +149,7 @@ func tc01_关卡选择页可打开() -> void:
 		scene.free()
 		return
 	var buttons: Array = scene.buttons
-	_check(buttons.size() == 4, "按钮数=%d, 期望 4 (4 个关卡)" % buttons.size())
+	_check(buttons.size() == 5, "按钮数=%d, 期望 5 (5 个关卡)" % buttons.size())
 	# T1.4: 解锁状态来自持久化进度(level_manager.unlocked), 按钮锁定 = idx > unlocked
 	var lm = _gm.level_manager
 	for i in range(buttons.size()):
@@ -174,8 +175,8 @@ func tc01_关卡选择页可打开() -> void:
 
 # ---------- TC-02 ----------
 func tc02_四关开局状态() -> void:
-	var expect := [[10, 10, 100], [12, 12, 300], [14, 14, 700], [16, 16, 1500]]
-	for i in range(4):
+	var expect := [[10, 10, 100], [12, 12, 300], [14, 14, 700], [16, 16, 1500], [18, 18, 3000]]
+	for i in range(expect.size()):
 		_gm.start_game(i)
 		_check(_gm.grid.w == expect[i][0] and _gm.grid.h == expect[i][1],
 			"第%d关网格=%dx%d, 期望 %dx%d" % [i + 1, _gm.grid.w, _gm.grid.h, expect[i][0], expect[i][1]])
@@ -714,10 +715,10 @@ func tc16_振荡有限终止() -> void:
 # ---------- TC-17 ----------
 func tc17_各关格子尺寸() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
-	var expect := [64, 64, 60, 52]
-	var expect_right := [820, 948, 1020, 1012]
-	var expect_bottom := [680, 808, 880, 872]
-	for i in range(4):
+	var expect := [64, 64, 60, 52, 46]
+	var expect_right := [820, 948, 1020, 1012, 1008]
+	var expect_bottom := [680, 808, 880, 872, 868]
+	for i in range(expect.size()):
 		_gm.start_game(i)
 		renderer.set_grid(_gm.grid)
 		_check(renderer.cell_size == expect[i], "第%d关 cell_size=%d, 期望 %d (GridRenderer.gd:92-94: min(64,1100/w,840/h))" % [i + 1, renderer.cell_size, expect[i]])
@@ -919,6 +920,90 @@ func tc37_入口文案() -> void:
 	_check(save.get_node("Layout") != null, "SaveSelect 缺 Layout 容器")
 	save.free()
 
+# ---------- TC-38 (T4.5) ----------
+func tc38_第五关() -> void:
+	_gm.start_game(4)
+	var has := {"superheat": false, "ashify": false, "abyss_purge": false}
+	for c in _gm.all_card_defs:
+		if has.has(c.id):
+			has[c.id] = true
+	_check(has["superheat"] and has["ashify"] and has["abyss_purge"], "第5关牌池缺少新牌: %s" % str(has))
+	# trigger_state 与 STEAMED/ASH 数据驱动路径
+	var g = Grid.new(6, 6)
+	_flash_grid(g, 0, 1)
+	var sh = _rule_card_from_json("superheat")
+	var ash = _rule_card_from_json("ashify")
+	var chain: int = ChainReaction.new().execute(g, [_pillar(sh, 2, 2), _pillar(ash, 2, 2)], 0)
+	_check(chain > 0, "superheat→ashify 连锁=%d, 期望 >0" % chain)
+	_check(g.count_element(Element.STONE) > 0, "灰烬转化未生成 STONE")
+	# FROZEN 加冻: 冰邻水
+	var g2 = Grid.new(4, 4)
+	_put(g2, 1, 1, Element.ICE)
+	_put(g2, 2, 1, Element.WATER)
+	load("res://src/world/WorldRules.gd").new()._frozen_contact(g2, 0)
+	_check(g2.get_cell(Vector2i(2, 1)).has_state(State.FROZEN), "冰邻水未加 FROZEN")
+	# 第5关天灾: 酸雨/磁暴都能出现
+	var acid := 0
+	var storm := 0
+	var rng := RngService.new()
+	rng.seed = 20240818
+	for _i in range(200):
+		var gg = Grid.new(6, 6)
+		var cc = gg.get_cell(Vector2i(3, 3))
+		cc.add_state(State.DUST, 3)
+		cc.pillar = _pillar(sh, 3, 3)
+		var pp = cc.pillar
+		load("res://src/world/WorldRules.gd").new()._disaster(gg, 4, 0, rng, [pp])
+		if not cc.has_state(State.DUST):
+			acid += 1
+		if pp.coord != Vector2i(3, 3):
+			storm += 1
+	_check(acid > 0 and storm > 0, "第5关天灾未覆盖酸雨/磁暴: acid=%d storm=%d" % [acid, storm])
+	# 第5关贪心可通关
+	_gm.rng.seed = 20240817
+	_gm.start_game(4)
+	for turn in range(30):
+		if _gm.game_ended:
+			break
+		var placed := 0
+		while placed < _gm.energy.current:
+			var played_any := false
+			var priority := ["abyss_purge", "superheat", "ashify", "steamify", "harvest", "grow", "extinct", "drought", "petrify", "grass_grow", "grass_spread"]
+			for pid in priority:
+				for card_idx in range(_gm.hand.hand_size()):
+					var card = _gm.hand.hand[card_idx]
+					if card.id != pid:
+						continue
+					var spot := _find_extinction_spot(card) if card.kind == RuleCard.Kind.EXTINCTION else (_find_state_spot(card) if card.trigger_state != State.NONE else _find_pair_spot(card.trigger_element, card.contact_element))
+					if spot.x >= 0 and _gm.play_card(card_idx, spot):
+						placed += 1
+						played_any = true
+						break
+				if played_any:
+					break
+			if not played_any:
+				break
+		if not _gm.pillars.is_empty():
+			await _gm.execute()
+		else:
+			_gm.end_turn()
+	_check(_gm.chain_total >= 3000 and _gm.game_ended, "第5关贪心30回合未通关: chain=%d ended=%s" % [_gm.chain_total, _gm.game_ended])
+
+func _find_state_spot(card: Resource) -> Vector2i:
+	var best := -1
+	var best_coord := Vector2i(-1, -1)
+	for c in _gm.grid.all_cells():
+		if c.pillar != null:
+			continue
+		var count := 0
+		for n in _gm.grid.cells_in_radius(c.coord, card.radius):
+			if n.element == card.trigger_element and n.has_state(card.trigger_state):
+				count += 1
+		if count > best:
+			best = count
+			best_coord = c.coord
+	return best_coord if best > 0 else Vector2i(-1, -1)
+
 # ---------- TC-21 ----------
 func tc21_贴图资源完整() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()
@@ -1102,7 +1187,7 @@ func tc31a_卡牌文案() -> void:
 	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
 	var data = JSON.parse_string(f.get_as_text())
 	f.close()
-	_check(typeof(data) == TYPE_ARRAY and data.size() == 14, "rules.json 应有14张牌, 实际 %d" % (data.size() if typeof(data) == TYPE_ARRAY else -1))
+	_check(typeof(data) == TYPE_ARRAY and data.size() == 17, "rules.json 应有17张牌, 实际 %d" % (data.size() if typeof(data) == TYPE_ARRAY else -1))
 	if typeof(data) != TYPE_ARRAY:
 		return
 	var ids: Dictionary = {}
@@ -1113,9 +1198,9 @@ func tc31a_卡牌文案() -> void:
 		_check(desc.length() <= 80 and tip.length() <= 80, "牌 %s 文案超80字" % e.get("id", "?"))
 		_check(not desc.contains("�") and not tip.contains("�"), "牌 %s 文案含乱码" % e.get("id", "?"))
 		ids[e.get("id", "")] = true
-	_check(ids.size() == 14, "牌 id 重复或缺失, 实际 %d" % ids.size())
+	_check(ids.size() == 17, "牌 id 重复或缺失, 实际 %d" % ids.size())
 	var cards: Array = _gm._load_rules()
-	_check(cards.size() == 14, "加载后规则牌=%d, 期望14" % cards.size())
+	_check(cards.size() == 17, "加载后规则牌=%d, 期望17" % cards.size())
 	var all_have := true
 	for c in cards:
 		if c.desc == "" or c.tip == "":

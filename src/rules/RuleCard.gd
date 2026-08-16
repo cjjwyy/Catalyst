@@ -56,5 +56,5 @@ func from_dict(d: Dictionary) -> bool:
 	add_state_turns = clampi(int(d.get("add_state_turns", 0)), 0, 99)
 	also_clear = Element.from_string(str(d.get("also_clear", "NONE")))
 	also_count = Element.from_string(str(d.get("also_count", "NONE")))
-	level = clampi(int(d.get("level", 0)), 0, 4)
+	level = clampi(int(d.get("level", 0)), 0, 9)
 	return true

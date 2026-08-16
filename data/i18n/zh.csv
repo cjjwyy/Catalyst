@@ -18,6 +18,7 @@ rule_level_1,本关: 基础规则, 适合首次游玩
 rule_level_2,本关新增: 孢子牌 · 燃烧蔓延
 rule_level_3,本关新增: 冰牌 · 降雪凝冰
 rule_level_4,本关新增: 祝福 · 陨石术 · 天灾
+rule_level_5,本关新增: 过热蒸汽 · 灰烬转化 · 酸雨/磁暴
 seed_placeholder,种子(留空=随机)
 lock_seed,锁定种子
 clear_seed,清除种子

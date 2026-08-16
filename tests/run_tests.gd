@@ -422,7 +422,7 @@ static func _test_extinct_counts_grass() -> bool:
 static func _test_level_manager() -> bool:
 	var LM = load("res://src/world/LevelManager.gd")
 	var lm = LM.new()
-	assert(lm.level_count() == 4, "should have 4 levels")
+	assert(lm.level_count() == 5, "should have 5 levels")
 	assert(lm.is_unlocked(0) == true, "level 0 unlocked")
 	assert(lm.is_unlocked(1) == false, "level 1 locked")
 	assert(lm.select(1) == false, "cannot select locked level")
@@ -448,7 +448,7 @@ static func _test_level_load() -> bool:
 		f.close()
 		assert(int(data.size[0]) == lvl.size[0], "level %d size mismatch" % i)
 		assert(int(data.target) == lvl.target, "level %d target mismatch" % i)
-	print("test_level_load OK (4 levels verified)")
+	print("test_level_load OK (5 levels verified)")
 	return true
 
 static func _test_hand_cap() -> bool:
