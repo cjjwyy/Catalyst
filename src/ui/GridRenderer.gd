@@ -133,6 +133,14 @@ func _draw() -> void:
 			if lbl != "":
 				draw_string(_font(), rect.position + Vector2(6, 26), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(0,0,0,0.55))
 				draw_string(_font(), rect.position + Vector2(4, 24), lbl, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color(1,1,1))
+			# T3.9: 选中手牌时, 高亮该牌触发/接触元素
+			if selected_card_idx >= 0 and GameManager != null and GameManager.has_method("get_hand_card"):
+				var sc = GameManager.get_hand_card(selected_card_idx)
+				if sc != null:
+					if c.element == sc.trigger_element:
+						draw_rect(rect, Color(1, 0.95, 0.2), false, 3.0)
+					elif sc.contact_element != Element.NONE and c.element == sc.contact_element:
+						draw_rect(rect, Color(0.4, 0.95, 1.0), false, 3.0)
 			if c.has_state(State.DUST):
 				var cx = rect.position.x + cell_size / 2.0
 				var cy = rect.position.y + cell_size / 2.0
@@ -246,6 +254,13 @@ func _draw_legend() -> void:
 		else:
 			draw_rect(box, COLORS.get(elem, Color.BLACK), true)
 		draw_rect(box, Color(0.2, 0.2, 0.22), false, 1.5)
+		if selected_card_idx >= 0 and GameManager != null and GameManager.has_method("get_hand_card"):
+			var sc = GameManager.get_hand_card(selected_card_idx)
+			if sc != null:
+				if elem == sc.trigger_element:
+					draw_rect(box, Color(1, 0.95, 0.2), false, 3.0)
+				elif sc.contact_element != Element.NONE and elem == sc.contact_element:
+					draw_rect(box, Color(0.4, 0.95, 1.0), false, 3.0)
 		draw_string(_font(), origin + Vector2(34, i * 38 + 20), name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Color(0.9, 0.9, 0.9))
 		i += 1
 	# 规则柱说明

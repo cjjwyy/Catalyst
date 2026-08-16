@@ -72,6 +72,9 @@ func _initialize() -> void:
 		["TC-23a", "帮助文本不溢出面板", tc23a_帮助文本不溢出],
 		["TC-23b", "空规则文件降级", tc23b_空规则文件降级],
 		["TC-25", "非法字段静默降级", tc25_非法字段降级],
+		["TC-31a", "卡牌说明文案完整", tc31a_卡牌文案],
+		["TC-31b", "帮助手册6页易读", tc31b_帮助手册],
+		["TC-31c", "首次引导不污染状态", tc31c_首次引导],
 		["TC-26a", "界外点击与越界坐标", tc26a_界外点击],
 		["TC-26b", "半径扫描边界格数", tc26b_半径边界格数],
 		["TC-28a", "催化剂尘越界消失", tc28a_尘越界消失],
@@ -1073,6 +1076,82 @@ func tc25_非法字段降级() -> void:
 	wf.close()
 	_gm.start_game(0)
 	_check(_gm.hand.hand_size() == 5, "恢复 rules.json 后手牌=%d, 期望 5" % _gm.hand.hand_size())
+# ---------- TC-31a (T3.9) ----------
+func tc31a_卡牌文案() -> void:
+	var f = FileAccess.open(RULES_PATH, FileAccess.READ)
+	var data = JSON.parse_string(f.get_as_text())
+	f.close()
+	_check(typeof(data) == TYPE_ARRAY and data.size() == 14, "rules.json 应有14张牌, 实际 %d" % (data.size() if typeof(data) == TYPE_ARRAY else -1))
+	if typeof(data) != TYPE_ARRAY:
+		return
+	var ids: Dictionary = {}
+	for e in data:
+		var desc: String = str(e.get("desc", ""))
+		var tip: String = str(e.get("tip", ""))
+		_check(desc != "" and tip != "", "牌 %s desc/tip 为空" % e.get("id", "?"))
+		_check(desc.length() <= 80 and tip.length() <= 80, "牌 %s 文案超80字" % e.get("id", "?"))
+		_check(not desc.contains("�") and not tip.contains("�"), "牌 %s 文案含乱码" % e.get("id", "?"))
+		ids[e.get("id", "")] = true
+	_check(ids.size() == 14, "牌 id 重复或缺失, 实际 %d" % ids.size())
+	var cards: Array = _gm._load_rules()
+	_check(cards.size() == 14, "加载后规则牌=%d, 期望14" % cards.size())
+	var all_have := true
+	for c in cards:
+		if c.desc == "" or c.tip == "":
+			all_have = false
+	_check(all_have, "RuleCard.from_dict 未解析全部 desc/tip")
+
+# ---------- TC-31b (T3.9) ----------
+func tc31b_帮助手册() -> void:
+	var main = load(MAIN_SCENE).instantiate()
+	root.add_child(main)
+	await self.process_frame
+	_check(main._help_pages.size() == 6, "帮助手册页数=%d, 期望6" % main._help_pages.size())
+	var ts = TextServerManager.get_primary_interface()
+	var font_rids: Array = ThemeDB.fallback_font.get_rids()
+	for i in range(main._help_pages.size()):
+		main._help_page = i
+		main._refresh_help_page()
+		var title: String = main.help_title_label.text
+		var body: String = main.help_label.text
+		_check(title.contains(str(main._help_pages[i].get("title", ""))), "第%d页标题缺失" % (i + 1))
+		_check(body.contains(str(main._help_pages[i].get("summary", ""))) or body.contains("示例"), "第%d页缺少摘要/示例" % (i + 1))
+		_check(body.length() > 20, "第%d页正文过短" % (i + 1))
+		if ts != null:
+			var st = ts.create_shaped_text()
+			ts.shaped_text_add_string(st, body, font_rids, 12)
+			ts.shaped_text_fit_to_width(st, int(main.help_label.size.x))
+			var sz = ts.shaped_text_get_size(st)
+			ts.free_rid(st)
+			_check(sz.y <= main.help_label.size.y, "第%d页文本高度=%0.0f > 面板高度%0.0f" % [i + 1, sz.y, main.help_label.size.y])
+	main.free()
+
+# ---------- TC-31c (T3.9) ----------
+func tc31c_首次引导() -> void:
+	_gm.save_manager.set_onboarding_seen(false)
+	OS.set_environment("FORCE_ONBOARDING", "1")
+	_gm.start_game(0)
+	var grid_before: String = _grid_hash(_gm.grid)
+	var hand_before: int = _gm.hand.hand_size()
+	var energy_before: int = _gm.energy.current
+	var turn_before: int = _gm.turn
+	var main = load(MAIN_SCENE).instantiate()
+	root.add_child(main)
+	await self.process_frame
+	_check(main.onboarding_panel != null, "首次进入未显示引导层")
+	for _i in range(4):
+		main._on_onboarding_next()
+		_check(main.onboarding_panel != null, "引导第%d步后无面板" % (_i + 2))
+	_check(main._onboarding_step == 4, "引导步数=%d, 期望4(0-based第5步)" % main._onboarding_step)
+	main._on_onboarding_skip()
+	_check(main.onboarding_panel == null, "跳过引导后面板未关闭")
+	_check(_gm.save_manager.is_onboarding_seen(), "跳过引导后 onboarding_seen 未持久化")
+	_check(_grid_hash(_gm.grid) == grid_before, "引导期间真实网格被修改")
+	_check(_gm.hand.hand_size() == hand_before and _gm.energy.current == energy_before and _gm.turn == turn_before,
+		"引导期间手牌/能量/回合被修改: %d/%d/%d -> %d/%d/%d" % [hand_before, energy_before, turn_before, _gm.hand.hand_size(), _gm.energy.current, _gm.turn])
+	OS.set_environment("FORCE_ONBOARDING", "")
+	main.free()
+
 # ---------- TC-26a ----------
 func tc26a_界外点击() -> void:
 	var renderer = load(GRID_RENDERER_SCRIPT).new()

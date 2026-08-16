@@ -12,6 +12,8 @@ const MAX_EXTINCT_THRESHOLD := 1000
 
 @export var id: String = ""
 @export var display_name: String = ""
+@export var desc: String = ""  # T3.9: 一句话效果/条件
+@export var tip: String = ""  # T3.9: 可执行示例/反制提示
 @export var kind: int = Kind.TRANSFORM
 @export var trigger_element: int = Element.NONE
 @export var trigger_state: int = State.NONE
@@ -38,6 +40,8 @@ func from_dict(d: Dictionary) -> bool:
 		return false
 	id = str(d.get("id", ""))
 	display_name = str(d.get("name", ""))
+	desc = str(d.get("desc", ""))
+	tip = str(d.get("tip", ""))
 	kind = Kind[kind_key]
 	trigger_element = Element.from_string(str(d.get("trigger_element", "NONE")))
 	trigger_state = State.from_string(str(d.get("trigger_state", "NONE")))

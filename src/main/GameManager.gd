@@ -370,13 +370,16 @@ func _load_rules() -> Array:
 func _default_rules() -> Array:
 	var defs := [
 		{"id": "steamify", "name": "蒸汽化", "kind": "TRANSFORM",
+			"desc": "水触熔岩:水→汽,首个熔岩→岩", "tip": "把柱子放在水与熔岩都覆盖到的空格上",
 			"trigger_element": "WATER", "contact_element": "LAVA",
 			"result_element": "STEAM", "self_replace": "STONE",
 			"radius": 2, "life": 4, "chain_reward": 1},
 		{"id": "grow", "name": "加速生长", "kind": "MULTIPLY",
+			"desc": "植触蒸汽:植物周围空格→植物", "tip": "先用蒸汽化造汽,再落加速生长扩散植物",
 			"trigger_element": "PLANT", "contact_element": "STEAM",
 			"result_element": "PLANT", "radius": 2, "life": 4, "chain_reward": 1},
 		{"id": "extinct", "name": "丛林灭绝", "kind": "EXTINCTION",
+			"desc": "半径内植物+草≥5:全部清空,并清汽", "tip": "植物过半时用它断掉生长燃料",
 			"trigger_element": "PLANT", "result_element": "NONE",
 			"radius": 2, "life": 4, "extinct_threshold": 5,
 			"also_count": "GRASS", "also_clear": "STEAM", "chain_reward": 1},
@@ -599,7 +602,9 @@ func chaos_check() -> void:
 			else:
 				game_ended = true
 				phase = Phase.EVOLVE
-				game_over.emit(false, "混沌失控 — %s 超过 50%%" % CHAOS_NAME.get(elem,"??"))
+				var counter: String = str({Element.WATER: "干涸", Element.PLANT: "丛林灭绝", Element.LAVA: "陨石术", Element.GRASS: "丛林灭绝"}.get(elem, ""))
+				var hint: String = (" 反制:%s" % counter) if counter != "" else ""
+				game_over.emit(false, "混沌失控 — %s 超过 50%%%s" % [CHAOS_NAME.get(elem,"??"), hint])
 				return
 
 func _world_rules() -> void:

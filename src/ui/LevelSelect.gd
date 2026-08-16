@@ -34,6 +34,15 @@ func _ready() -> void:
 		btn.pressed.connect(func(): _on_level_selected(i))
 		container.add_child(btn)
 		buttons.append(btn)
+		var rule_hint := Label.new()
+		match i:
+			1: rule_hint.text = "本关新增: 孢子牌 · 燃烧蔓延"
+			2: rule_hint.text = "本关新增: 冰牌 · 降雪凝冰"
+			3: rule_hint.text = "本关新增: 祝福 · 陨石术 · 天灾"
+			_: rule_hint.text = "本关: 基础规则, 适合首次游玩"
+		rule_hint.add_theme_font_size_override("font_size", 12)
+		rule_hint.modulate = Color(0.85, 0.9, 0.85)
+		container.add_child(rule_hint)
 	# T3.8: 种子输入与每日挑战
 	seed_edit = LineEdit.new()
 	seed_edit.name = "SeedEdit"

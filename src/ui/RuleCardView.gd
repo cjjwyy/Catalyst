@@ -21,7 +21,9 @@ func setup(c, idx: int) -> void:
 		t.text = c.display_name if c != null else "-"
 	var e: Label = get_node_or_null("EffectLabel")
 	if e != null:
-		e.text = _effect_text()
+		var dv = card.get("desc") if card != null else null
+		var desc: String = str(dv) if dv != null else ""
+		e.text = _effect_text() + ("\n" + desc if desc != "" else "")
 	var band: ColorRect = get_node_or_null("TypeBand")
 	if band != null:
 		band.color = _kind_color()
@@ -41,7 +43,9 @@ func refresh() -> void:
 		t.text = card.display_name
 	var e: Label = get_node_or_null("EffectLabel")
 	if e != null:
-		e.text = _effect_text()
+		var dv = card.get("desc") if card != null else null
+		var desc: String = str(dv) if dv != null else ""
+		e.text = _effect_text() + ("\n" + desc if desc != "" else "")
 
 const CN = {
 	Element.NONE: "空", Element.WATER: "水", Element.STONE: "岩",

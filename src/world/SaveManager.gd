@@ -7,6 +7,7 @@ const SAVE_PATH: String = "user://save.cfg"
 var slots: Array = []           # [{name, timestamp, data}], 空字典 = 空槽
 var loaded_from_slot: int = -1  # T1.4: 本局加载来源槽; -1 = 新游戏
 var meta_unlocked: int = 0      # 全局通关进度(删档不丢)
+var meta_onboarding_seen: bool = false  # T3.9: 首次引导完成/跳过标记(meta 区, 删档不丢)
 var save_path: String = SAVE_PATH
 
 func _init() -> void:
@@ -23,6 +24,7 @@ func use_path(p: String) -> void:
 		slots.append({})
 	loaded_from_slot = -1
 	meta_unlocked = 0
+	meta_onboarding_seen = false
 	load_from_disk()
 
 func load_from_disk() -> void:
@@ -35,6 +37,7 @@ func load_from_disk() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	meta_unlocked = int(data.get("unlocked", 0))
+	meta_onboarding_seen = bool(data.get("onboarding_seen", false))
 	var arr = data.get("slots", [])
 	if typeof(arr) == TYPE_ARRAY:
 		for i in range(min(SLOT_COUNT, arr.size())):
@@ -42,7 +45,7 @@ func load_from_disk() -> void:
 				slots[i] = arr[i]
 
 func save_to_disk() -> void:
-	var data = {"unlocked": meta_unlocked, "slots": slots}
+	var data = {"unlocked": meta_unlocked, "onboarding_seen": meta_onboarding_seen, "slots": slots}
 	var f = FileAccess.open(save_path, FileAccess.WRITE)
 	if f == null:
 		push_warning("SaveManager: 无法写入 %s" % save_path)
@@ -110,3 +113,11 @@ func set_unlocked(v: int) -> void:
 
 func get_unlocked() -> int:
 	return meta_unlocked
+
+# T3.9: 首次引导标记(与 unlocked 同级持久化)
+func is_onboarding_seen() -> bool:
+	return meta_onboarding_seen
+
+func set_onboarding_seen(v: bool) -> void:
+	meta_onboarding_seen = v
+	save_to_disk()
